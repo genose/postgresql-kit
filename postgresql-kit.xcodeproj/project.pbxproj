@@ -202,7 +202,7 @@
 		6E48CD7D1A73FC350060B429 /* Queries.md in CopyFiles */ = {isa = PBXBuildFile; fileRef = 6E48CD7B1A73FC2B0060B429 /* Queries.md */; };
 		6E4DEC87162CC38D008B26BD /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6E8C168115F26BF20013A382 /* Foundation.framework */; };
 		6E4DEC95162CC4AB008B26BD /* PGClientKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 6ED85B4916288D0200A6DC02 /* PGClientKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		6E4DEC96162CC5E6008B26BD /* PGClientKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6ED85B4616288C4800A6DC02 /* PGClientKit.framework */; };
+		6E4DEC96162CC5E6008B26BD /* PGClientKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6ED85B4616288C4800A6DC02 /* PGClientKit.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
 		6E50183B1AC9BAD000D6D967 /* PGTabView.m in Sources */ = {isa = PBXBuildFile; fileRef = 6E50183A1AC9BAD000D6D967 /* PGTabView.m */; };
 		6E5018411ACA90D900D6D967 /* PGTabViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 6E5018401ACA90D900D6D967 /* PGTabViewCell.m */; };
 		6E55A2321A618C6B00CD2B60 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 6E55A2311A618C6B00CD2B60 /* main.m */; };
@@ -484,7 +484,7 @@
 		6E4DEC83162CC38D008B26BD /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
+			dstPath = /usr/share/man/man1;
 			dstSubfolderSpec = 0;
 			files = (
 			);
@@ -2837,7 +2837,10 @@
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
 				GCC_OPTIMIZATION_LEVEL = s;
-				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG2=1",
+					"DEBUG=1",
+				);
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-I/usr/local/include";
 				SDKROOT = macosx;
@@ -2902,6 +2905,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				LD_RUNPATH_SEARCH_PATHS = "${BUILT_PRODUCTS_DIR}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -2919,6 +2923,7 @@
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				LD_RUNPATH_SEARCH_PATHS = "${BUILT_PRODUCTS_DIR}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

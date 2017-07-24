@@ -76,7 +76,7 @@
 	[self setState:PGConnectionStateQuery];
 	
 	[self _updateStatus];
-	NSParameterAssert(_callback==nil);
+	NSParameterAssert(_callback!=nil);
 	_callback = (__bridge_retained void* )[callback copy];
 }
 
