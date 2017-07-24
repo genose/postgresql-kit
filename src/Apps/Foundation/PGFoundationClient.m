@@ -127,7 +127,7 @@
 }
 
 -(void)execute:(id)query {
-	[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+	[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 		if(error) {
 			[[self term] printf:@"Error: %@ (%@/%ld)",[error localizedDescription],[error domain],[error code]];
 		}
@@ -183,7 +183,7 @@
 			[[self term] printf:@"error: tables: too many arguments"];
 		} else {
 			PGQueryObject* query = [PGQuery queryWithString:@"SELECT datname AS database,pid AS pid,query AS query,usename AS username,client_hostname AS remotehost,application_name,query_start,waiting FROM pg_stat_activity WHERE pid <> pg_backend_pid()"];
-			[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+			[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 				if(result) {
 					[self displayResult:result];
 				}
@@ -218,9 +218,9 @@
 			[[self term] printf:@"error: table: not enough arguments"];
 			return;
 		}
-		PGQueryObject* query = [PGQuerySelect select:[PGQuerySource sourceWithTable:tableName schema:schemaName alias:nil] options:0];
+		PGQueryObject* query = [PGQuerySelect select:[PGQuerySource table:tableName schema:schemaName alias:nil] options:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -241,7 +241,7 @@
 		}
 		PGQuery* query = [PGQueryRole create:roleName options:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -262,7 +262,7 @@
 		}
 		PGQuery* query = [PGQueryRole drop:roleName options:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -283,7 +283,7 @@
 		}
 		PGQuery* query = [PGQueryDatabase create:databaseName options:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -304,7 +304,7 @@
 		}
 		PGQuery* query = [PGQueryDatabase drop:databaseName options:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -325,7 +325,7 @@
 		}
 		PGQuery* query = [PGQuerySchema create:schemaName options:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -346,7 +346,7 @@
 		}
 		PGQuery* query = [PGQuerySchema drop:schemaName options:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -360,7 +360,7 @@
 	if([command isEqualToString:@"listschemas"]) {
 		PGQuery* query = [PGQuerySchema listWithOptions:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -374,7 +374,7 @@
 	if([command isEqualToString:@"listroles"]) {
 		PGQuery* query = [PGQueryRole listWithOptions:0];
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}
@@ -392,7 +392,7 @@
 		[query addColumn:@"y" alias:@"col2"];
 		
 		NSParameterAssert(query);
-		[[self db] executeQuery:query whenDone:^(PGResult* result, NSError* error) {
+		[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 			if(result) {
 				[self displayResult:result];
 			}

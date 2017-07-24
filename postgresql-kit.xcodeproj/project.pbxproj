@@ -2839,7 +2839,8 @@
 				GCC_OPTIMIZATION_LEVEL = s;
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx10.9;
+				OTHER_CFLAGS = "-I/usr/local/include";
+				SDKROOT = macosx;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Debug;
@@ -2848,7 +2849,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
-				SDKROOT = macosx10.9;
+				OTHER_CFLAGS = "-I/usr/local/include";
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
