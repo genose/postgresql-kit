@@ -12,6 +12,16 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
+// *************************************
+//
+// Copyright 2017 - ?? Sebastien Cotillard - Genose.org
+// 07/2017 Sebastien Cotillard
+// https://github.com/genose
+//
+// *************************************
+// ADDING Pool concurrent operation
+// *************************************
+
 #import <PGClientKit/PGClientKit.h>
 #import <PGClientKit/PGClientKit+Private.h>
 
@@ -22,6 +32,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 -(void)_execute:(NSString* )query values:(NSArray* )values whenDone:(void(^)(PGResult* result,NSError* error)) callback {
+    
+
+    
 	NSParameterAssert(query && [query isKindOfClass:[NSString class]]);
 	if(_connection==nil || [self state] != PGConnectionStateNone) {
 		callback(nil,[self raiseError:nil code:PGClientErrorState]);
@@ -50,6 +63,8 @@
 		NSLog(@"TODO: Turn %@ into arg",[obj class]);		
 		_paramSetNull(params,i);
 	}
+    
+  
 	// check number of parameters
 	if(params->size > INT_MAX) {
 		_paramFree(params);
@@ -63,11 +78,26 @@
 		className = [[self delegate] connection:self willExecute:query];
 	}
 	
+    NSParameterAssert(callback!=nil);
+    
+    _callbackOperation = (__bridge_retained void* )[callback copy];
+    
+    //   if([self currentPoolOperation] != nil) [[self currentPoolOperation] invalidate];
+    
+    [self addOperation:query withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
+    
+    NSParameterAssert(_callbackOperation!=nil);
+    
+    
+    
 	// execute the command, free parameters
 	int resultFormat = ([self tupleFormat]==PGClientTupleFormatBinary) ? 1 : 0;
 	int returnCode = PQsendQueryParams(_connection,[query UTF8String],(int)params->size,params->types,(const char** )params->values,params->lengths,params->formats,resultFormat);
 	_paramFree(params);
 	if(!returnCode) {
+#if defined DEBUG && defined DEBUG2
+        NSLog(@"%@ :: %@ :: - execute - error :: callback %p ", NSStringFromSelector(_cmd),NSStringFromClass([self class]), callback);
+#endif
 		callback(nil,[self raiseError:nil code:PGClientErrorExecute reason:[NSString stringWithUTF8String:PQerrorMessage(_connection)]]);
 		return;
 	}
@@ -76,8 +106,12 @@
 	[self setState:PGConnectionStateQuery];
 	
 	[self _updateStatus];
-	NSParameterAssert(_callback!=nil);
-	_callback = (__bridge_retained void* )[callback copy];
+    
+  
+#if defined DEBUG && defined DEBUG2
+    NSLog(@"%@ :: %@ :: - execute - return :: callback %p :: %p ", NSStringFromSelector(_cmd),NSStringFromClass([self class]), callback, _callbackOperation);
+#endif
+    [NSThread sleepForTimeInterval: .2];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -95,11 +129,17 @@
 		query2 = [(PGQuery* )query quoteForConnection:self error:&error];
 	}
 	if(error) {
+#if defined DEBUG && defined DEBUG2
+        NSLog(@"%@ :: %@ - query ERROR - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
+#endif
 		callback(nil,error);
 	} else if(query2==nil) {
 		callback(nil,[self raiseError:nil code:PGClientErrorExecute reason:@"Query is nil"]);
 	} else {
-		[self _execute:query2 values:nil whenDone:callback];
+#if defined DEBUG && defined DEBUG2
+        NSLog(@"%@ :: %@ - query - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
+#endif
+		[self _execute:query2 values:nil whenDone: callback];
 	}
 }
 

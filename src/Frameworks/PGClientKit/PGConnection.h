@@ -21,6 +21,8 @@
   *  and errors.
   */
 
+ 
+
 ////////////////////////////////////////////////////////////////////////////////
 // constants
 
@@ -75,13 +77,17 @@ typedef enum {
 	PGClientTupleFormatBinary = 1
 } PGClientTupleFormat;
 
+@class PGConnectionOperation;
+
 ////////////////////////////////////////////////////////////////////////////////
 // PGConnection interface
 
-@interface PGConnection : NSObject {
+@interface PGConnection : NSObject <NSCopying> {
 	void* _connection;
 	void* _cancel;
-	void* _callback;
+//	replaced by a pool Mechanism :: void* _callback;
+    void* _callbackOperation;
+    CFMutableArrayRef  _callbackOperationPool;
 	CFSocketRef _socket;
 	CFRunLoopSourceRef _runloopsource;
 	NSUInteger _timeout;
@@ -175,6 +181,14 @@ typedef enum {
 -(NSString* )quoteIdentifier:(NSString* )string;
 -(NSString* )quoteString:(NSString* )string;
 -(NSString* )encryptedPassword:(NSString* )password role:(NSString* )roleName;
+
+
+-(id)addOperation:(id)operationClass withCallBackWhenDone:(void*)callBackWhenDone withCallBackWhenError:(void*)callBackWhenError;
+
+-(PGConnectionOperation*)currentPoolOperation;
+
+-(id)invalidateOperation:(NSInteger)operationRefIndex;
+
 
 @end
 

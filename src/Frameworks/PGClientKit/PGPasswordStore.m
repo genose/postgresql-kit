@@ -60,7 +60,13 @@
 			value = [NSString stringWithFormat:@"%lu",(unsigned long)PGClientDefaultPort];
 		}
 		if(value) {
-			[parts addObject:[NSString stringWithFormat:@"%@=%@",key,[[value description] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
+#if __IPHONE_OS_VERSION_MIN_REQUIRED  >= __IPHONE_10_0 || MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_10
+            NSCharacterSet *allowedCharset = [NSCharacterSet URLPathAllowedCharacterSet];
+
+			[parts addObject:[NSString stringWithFormat:@"%@=%@",key,[[value description] stringByAddingPercentEncodingWithAllowedCharacters: allowedCharset ]]];
+#else
+            [parts addObject:[NSString stringWithFormat:@"%@=%@",key,[[value description] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]]];
+#endif
 		}
 	}
 	return [parts componentsJoinedByString:@";"];

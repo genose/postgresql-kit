@@ -72,7 +72,7 @@ NSString* PGQueryOptionsKey = @"options";
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark properties
 ////////////////////////////////////////////////////////////////////////////////
-
+@synthesize _callback = _callback;
 @synthesize dictionary = _dictionary;
 @dynamic options;
 
@@ -130,6 +130,22 @@ NSString* PGQueryOptionsKey = @"options";
 
 -(void)clearOptionFlags:(NSUInteger)flag {
 	[self setOptions:([self options] & ~flag)];
+}
+
+
+-(const char* )UTF8String
+{
+    return [[self queryString] UTF8String];
+}
+-(NSString* )string
+{
+    return [self queryString];
+}
+-(NSString* )queryString
+{
+    NSString* queryTales = [self objectForKey:PGQueryStatementKey];
+    NSLog(@"%@(%p) :: %@ :: %@", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), queryTales );
+    return queryTales;
 }
 
 @end

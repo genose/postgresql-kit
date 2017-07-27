@@ -16,5 +16,8 @@
 #import <PGClientKit/PGClientKit+Private.h>
 
 @implementation PGQueryUpdate
++(PGQueryUpdate* )into:(id)source values:(NSDictionary* )values where:(id)where
+{
 
+}
 @end

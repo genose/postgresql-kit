@@ -326,6 +326,13 @@
 		6EFFF2351A5F04C800CAA6E7 /* PGFoundationApp.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFF2311A5F044E00CAA6E7 /* PGFoundationApp.m */; };
 		6EFFF23A1A5F052A00CAA6E7 /* PGFoundationApp.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFF2311A5F044E00CAA6E7 /* PGFoundationApp.m */; };
 		6EFFF23C1A5F053000CAA6E7 /* Terminal.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFF2391A5F051D00CAA6E7 /* Terminal.m */; };
+		C6457D4E1F288DD7005F6686 /* PGConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */; };
+		C6457D4F1F288DD7005F6686 /* PGConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */; };
+		C6457D501F288DD7005F6686 /* PGConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */; };
+		C6457D511F288DD7005F6686 /* PGConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */; };
+		C6457D671F28F470005F6686 /* PGConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */; };
+		C6457D681F28F475005F6686 /* PGConnectionOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = C6457D491F288DD7005F6686 /* PGConnectionOperation.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		C6457D691F28F478005F6686 /* PGConnectionOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = C6457D491F288DD7005F6686 /* PGConnectionOperation.h */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -846,6 +853,8 @@
 		6EFFF2331A5F044E00CAA6E7 /* PGFoundationServer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PGFoundationServer.m; sourceTree = "<group>"; };
 		6EFFF2381A5F051D00CAA6E7 /* Terminal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Terminal.h; sourceTree = "<group>"; };
 		6EFFF2391A5F051D00CAA6E7 /* Terminal.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Terminal.m; sourceTree = "<group>"; };
+		C6457D491F288DD7005F6686 /* PGConnectionOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PGConnectionOperation.h; path = src/Frameworks/PGClientKit/PGConnectionOperation.h; sourceTree = SOURCE_ROOT; };
+		C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGConnectionOperation.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1694,6 +1703,8 @@
 		6ED85B3316288BEF00A6DC02 /* PGClientKit */ = {
 			isa = PBXGroup;
 			children = (
+				C6457D491F288DD7005F6686 /* PGConnectionOperation.h */,
+				C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */,
 				1413DF1D17AD79AC009615E5 /* PGClientKit_ios.plist */,
 				1413DF1E17AD79AC009615E5 /* PGClientKit_mac.plist */,
 				6ED85B4916288D0200A6DC02 /* PGClientKit.h */,
@@ -1809,6 +1820,7 @@
 				6E0DDCF61AAB74B100A38F3B /* PGQueryTableView.h in Headers */,
 				6EC6748E1AD94FC700CAB4FF /* NSError+PGAdditions.h in Headers */,
 				6EC674871AD94F6100CAB4FF /* PGQueryInsert.h in Headers */,
+				C6457D691F28F478005F6686 /* PGConnectionOperation.h in Headers */,
 				1450A1681AAA18DA002D62D9 /* PGQueryPredicate.h in Headers */,
 				6E1548441A5819AC00556573 /* PGClientKit.h in Headers */,
 				1450A15F1AAA145A002D62D9 /* PGQuerySource.h in Headers */,
@@ -1834,6 +1846,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C6457D681F28F475005F6686 /* PGConnectionOperation.h in Headers */,
 				6E4DEC95162CC4AB008B26BD /* PGClientKit.h in Headers */,
 				6E0DDCE31AAB6F5200A38F3B /* PGQueryDatabase.h in Headers */,
 				149BA1A41AA6FB54007B86A0 /* PGQuerySelect.h in Headers */,
@@ -2413,6 +2426,7 @@
 				6E15484E1A5819F000556573 /* PGQuery.m in Sources */,
 				6EC6748F1AD94FCC00CAB4FF /* NSError+PGAdditions.m in Sources */,
 				6E9256BC1AA64BDA007DAD82 /* PGConnection+Execute.m in Sources */,
+				C6457D4E1F288DD7005F6686 /* PGConnectionOperation.m in Sources */,
 				6E1548581A581F2B00556573 /* SSKeychain.m in Sources */,
 				6E0DDCF81AAB74B100A38F3B /* PGQueryTableView.m in Sources */,
 			);
@@ -2432,6 +2446,7 @@
 			files = (
 				14FD07261AA711210013557E /* GBCommandLineParser.m in Sources */,
 				6EFFF23C1A5F053000CAA6E7 /* Terminal.m in Sources */,
+				C6457D501F288DD7005F6686 /* PGConnectionOperation.m in Sources */,
 				14FD07251AA7111E0013557E /* GBOptionsHelper.m in Sources */,
 				14FD07231AA711140013557E /* GBSettings.m in Sources */,
 				6EFFF23A1A5F052A00CAA6E7 /* PGFoundationApp.m in Sources */,
@@ -2446,6 +2461,7 @@
 			files = (
 				6E6154D01AC6F84B00541DDE /* LogController.m in Sources */,
 				6E55A2321A618C6B00CD2B60 /* main.m in Sources */,
+				C6457D511F288DD7005F6686 /* PGConnectionOperation.m in Sources */,
 				6E55A2341A618CD300CD2B60 /* Application.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2478,6 +2494,7 @@
 				6EFFF2341A5F04C500CAA6E7 /* PGFoundationServer.m in Sources */,
 				14C245E51AB6C770005ED153 /* GBCommandLineParser.m in Sources */,
 				14C245DF1AB6C766005ED153 /* GBSettings.m in Sources */,
+				C6457D4F1F288DD7005F6686 /* PGConnectionOperation.m in Sources */,
 				14C245E31AB6C76A005ED153 /* GBPrint.m in Sources */,
 				6EFFF2351A5F04C800CAA6E7 /* PGFoundationApp.m in Sources */,
 				14C245E41AB6C76D005ED153 /* GBOptionsHelper.m in Sources */,
@@ -2524,6 +2541,7 @@
 				6E0DDCEB1AAB721600A38F3B /* PGQueryRole.m in Sources */,
 				1450A1691AAA18DA002D62D9 /* PGQueryPredicate.m in Sources */,
 				6E0DDCE51AAB6F5200A38F3B /* PGQueryDatabase.m in Sources */,
+				C6457D671F28F470005F6686 /* PGConnectionOperation.m in Sources */,
 				14DECDA616B56DF300178235 /* PGConverters+Data2Object.m in Sources */,
 				6EAA40ED17BC150E0078EB32 /* NSURL+PGAdditions.m in Sources */,
 				147070E31A976E230069EF9C /* NSString+PGNetworkValidationAdditions.m in Sources */,
@@ -2836,7 +2854,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
-				GCC_OPTIMIZATION_LEVEL = s;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG2=1",
 					"DEBUG=1",
@@ -2852,6 +2870,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
 				OTHER_CFLAGS = "-I/usr/local/include";
 				SDKROOT = macosx;
 			};

@@ -69,8 +69,20 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
 	NSParameterAssert(error);
 	// perform selector
 	if([[self delegate] respondsToSelector:@selector(connection:error:)]) {
-		[[self delegate] connection:self error:error];
-	}
+#if defined DEBUG && defined DEBUG2
+        NSLog(@"PGConnectionStateQuery - _raiseError :: send to delegate connection:error:" );
+#endif
+//		[[self delegate] connection:self error:error];
+// @{@"connection":self, @"error":error}
+        [NSThread detachNewThreadWithBlock:^{
+            	[[self delegate] connection:self error:error];
+        }];
+//        [NSThread detachNewThreadSelector:@selector(connection:error:) toTarget:[self delegate] withObject:nil ];
+    }else{
+#if defined DEBUG && defined DEBUG2
+        NSLog(@"PGConnectionStateQuery - _raiseError :: no delegate respondsto connection:error:" );
+#endif
+    }
 }
 
 -(NSError* )raiseError:(NSError** )error code:(PGClientErrorDomainCode)code reason:(NSString* )format,...  {
@@ -89,8 +101,19 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
 	}
 	// raise the error with the delegate
 	if([self delegate]) {
-		[self performSelectorOnMainThread:@selector(_raiseError:) withObject:theError waitUntilDone:YES];
-	}
+#if defined DEBUG && defined DEBUG2
+        NSLog(@"PGConnectionStateQuery - _raiseError :: performSelectorOnMainThread :: (%@)", theError );
+#endif
+        // [self performSelectorOnMainThread:@selector(_raiseError:) withObject:theError waitUntilDone:YES];
+        [self _raiseError:theError];
+    }else{
+#if defined DEBUG && defined DEBUG2
+        NSLog(@"PGConnectionStateQuery - _raiseError:code: :: no delegate avail" );
+#endif
+    }
+#if defined DEBUG && defined DEBUG2
+    NSLog(@"PGConnectionStateQuery - _raiseError :: return " );
+#endif
 	return theError;
 }
 

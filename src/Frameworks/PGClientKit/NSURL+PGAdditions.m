@@ -21,7 +21,13 @@
 // PRIVATE METHODS
 
 +(NSString* )_pg_urlencode:(NSString* )string {
-	return (NSString* )CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,(__bridge CFStringRef)string,NULL,(__bridge CFStringRef)@"!*'();:@&=+$,/?%#[]",kCFStringEncodingUTF8));
+#if __IPHONE_OS_VERSION_MIN_REQUIRED  >= __IPHONE_10_0 || MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_10
+//    NSCharacterSet *allowedCharset = [NSCharacterSet characterSetWithCharactersInString:@"!*'();:@&=+$,/?%#[]"];
+     NSCharacterSet *allowedCharset = [NSCharacterSet URLQueryAllowedCharacterSet ];
+    return (NSString* ) [string stringByAddingPercentEncodingWithAllowedCharacters:allowedCharset  ]  ;
+#else
+    return (NSString* )CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,(__bridge CFStringRef)string,NULL,(__bridge CFStringRef)@"!*'();:@&=+$,/?%#[]",kCFStringEncodingUTF8));
+#endif
 }
 
 +(NSString* )_pg_urlencode_params:(NSDictionary* )params {
@@ -288,8 +294,17 @@
 			// we require a key/value pair for any additional parameter
 			return nil;
 		}
-		NSString* theKey = [[theKeyValue objectAtIndex:0] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-		NSString* theValue = [[theKeyValue objectAtIndex:1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+        
+#if __IPHONE_OS_VERSION_MIN_REQUIRED  >= __IPHONE_10_0 || MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_10
+        
+        NSCharacterSet *allowedCharset = [NSCharacterSet  URLPathAllowedCharacterSet];
+        
+		NSString* theKey = [[theKeyValue objectAtIndex:0] stringByAddingPercentEncodingWithAllowedCharacters: allowedCharset];
+		NSString* theValue = [[theKeyValue objectAtIndex:1] stringByAddingPercentEncodingWithAllowedCharacters: allowedCharset];
+#else
+        NSString* theKey = [[theKeyValue objectAtIndex:0] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+        NSString* theValue = [[theKeyValue objectAtIndex:1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+#endif
 		
 		// insert into theParameters, allow override of sslmode
 		if([theParameters objectForKey:theKey]==nil || [theKey isEqual:@"sslmode"]) {

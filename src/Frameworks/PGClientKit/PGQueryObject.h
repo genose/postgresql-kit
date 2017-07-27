@@ -45,6 +45,7 @@
  *  Return option flags
  */
 @property NSUInteger options;
+@property 	void* _callback;
 
 ////////////////////////////////////////////////////////////////////////////////
 // methods
@@ -101,5 +102,8 @@
  *  @return Returns the statement on success, or nil on error.
  */
 -(NSString* )quoteForConnection:(PGConnection* )connection error:(NSError** )error;
+
+-(const char* )UTF8String;
+-(NSString* )queryString;
 
 @end

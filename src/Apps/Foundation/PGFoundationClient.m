@@ -1,4 +1,4 @@
-
+ 
 // Copyright 2009-2015 David Thorpe
 // https://github.com/djthorpe/postgresql-kit
 //
@@ -15,7 +15,9 @@
 #import "PGFoundationClient.h"
 
 @implementation PGFoundationClient
-
+@synthesize db = _db;
+@synthesize term = _term;
+@synthesize passwordstore = _passwordstore;
 ////////////////////////////////////////////////////////////////////////////////
 // constructor
 
@@ -36,9 +38,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // properties
 
-@synthesize db = _db;
-@synthesize term = _term;
-@synthesize passwordstore = _passwordstore;
+
 @dynamic url;
 @dynamic prompt;
 
@@ -83,8 +83,9 @@
 	}
 }
 
--(void)connection:(PGConnection* )connection willExecute:(NSString *)query {
+-(NSString* )connection:(PGConnection* )connection willExecute:(NSString *)query {
 	[[self term] printf:query];
+    return nil;
 }
 
 -(void)connection:(PGConnection* )connection statusChange:(PGConnectionStatus)status description:(NSString *)description {
@@ -127,13 +128,18 @@
 }
 
 -(void)execute:(id)query {
+    
+    
+//     query = [PGQuery queryWithString:@"SELECT datname FROM pg_database"];
+
+    
 	[[self db] execute:query whenDone:^(PGResult* result, NSError* error) {
 		if(error) {
 			[[self term] printf:@"Error: %@ (%@/%ld)",[error localizedDescription],[error domain],[error code]];
 		}
 		if(result) {
 			[self displayResult:result];
-			[[self term] addHistory:query];
+			[[self term] addHistory: query ];
 		}
 	}];
 }

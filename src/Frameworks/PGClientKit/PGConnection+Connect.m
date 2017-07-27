@@ -141,8 +141,11 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 	}
 
 	// set callback
-	NSParameterAssert(_callback==nil);
-	_callback = (__bridge_retained void* )[callback copy];
+	NSParameterAssert(callback!=nil);
+    // not quite good for cascaded Operation
+//::	_callback = (__bridge_retained void* )[callback copy];
+    // So we do good things to deal with cascaded Operation
+    [self addOperation:self withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
 
 	// add socket to run loop
 	[self _socketConnect:PGConnectionStateConnect];

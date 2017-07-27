@@ -65,6 +65,9 @@ typedef enum {
 #import "PGConnection.h"
 #import "PGConnectionPool.h"
 
+// queries callback pool
+#import "PGConnectionOperation.h"
+
 // queries
 #import "PGQueryObject.h"
 #import "PGQuery.h"
