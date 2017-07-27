@@ -35,7 +35,7 @@
     _operationInfo = nil;
     _callbackWhenDone = NULL;
     _callbackWhenError = NULL;
-    invalidated = YES;
+    _invalidated = YES;
     return self;
     
 }
@@ -53,11 +53,11 @@
         _operation = operation;
         
         
-        poolRefIdentifier = poolIdentifier;
+        _poolRefIdentifier = poolIdentifier;
         
         _callbackWhenDone = (__bridge_retained void* )([(__bridge void (^)(void* ,void* ))(callBackBlockDone)  copy]);//(__bridge void (^)(PGResult* ,NSError* ))(callBackBlockDone);
         _callbackWhenError = (__bridge_retained void* )([(__bridge void (^)(void* ,void* ))(callBackBlockError)   copy]);//(__bridge void (^)(PGResult* ,NSError* ))(callBackBlockDone);
-        invalidated = NO;
+        _invalidated = NO;
     }else{
         return nil;
     }
@@ -65,18 +65,31 @@
 }
 -(bool)valid
 {
-    return !invalidated;
+    return !_invalidated;
 }
 -(void)invalidate
 {
-    NSLog(@" %@::%@ :: INVALIDATE pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), poolRefIdentifier, [self description]);
-    if(poolRefIdentifier !=0)
-        [_operationConnectionClassRef invalidateOperation: poolRefIdentifier];
-    invalidated = TRUE;
+    NSLog(@" %@::%@ :: INVALIDATE pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), _poolRefIdentifier, [self description]);
+    if(_poolRefIdentifier !=0)
+        [_operationConnectionClassRef invalidateOperation: _poolRefIdentifier];
+    _invalidated = TRUE;
+}
+
+-(void)validate
+{
+    NSLog(@" %@::%@ :: REACTIVATE pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), _poolRefIdentifier, [self description]);
+    if(_poolRefIdentifier !=0)
+        [_operationConnectionClassRef invalidateOperation: _poolRefIdentifier];
+    _invalidated = NO;
 }
 -(PGConnection*)getConnectionDelegate
 {
     return _operationConnectionClassRef;
+    
+}
+-(NSInteger)poolIdentifier
+{
+    return _poolRefIdentifier;
     
 }
 

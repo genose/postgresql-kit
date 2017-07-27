@@ -183,12 +183,19 @@ typedef enum {
 -(NSString* )encryptedPassword:(NSString* )password role:(NSString* )roleName;
 
 
+
+-(NSInteger)currentPoolOperationChildCount;
+-(NSInteger)connectionPoolOperationCount;
+
 -(id)addOperation:(id)operationClass withCallBackWhenDone:(void*)callBackWhenDone withCallBackWhenError:(void*)callBackWhenError;
 
+-(PGConnectionOperation*)prevPoolOperation;
 -(PGConnectionOperation*)currentPoolOperation;
+-(PGConnectionOperation*)masterPoolOperation;
 
 -(id)invalidateOperation:(NSInteger)operationRefIndex;
-
+-(void)_waitingPoolOperationForResult;
+-(void)_waitingPoolOperationForResultMaster;
 
 @end
 

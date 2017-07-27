@@ -85,7 +85,9 @@ void _noticeProcessor(void* arg,const char* cString) {
 	// add to run loop to begin polling
 	_runloopsource = CFSocketCreateRunLoopSource(NULL,_socket,0);
 	NSParameterAssert(_runloopsource && CFRunLoopSourceIsValid(_runloopsource));
-	CFRunLoopAddSource(CFRunLoopGetCurrent(),_runloopsource,(CFStringRef)kCFRunLoopCommonModes);
+	CFRunLoopAddSource(
+                       CFRunLoopGetMain(), // CFRunLoopGetCurrent()
+                       _runloopsource,(CFStringRef)kCFRunLoopCommonModes);
 #if defined DEBUG && defined DEBUG2
     NSLog(@"%@ :: %@ :::: Socket created ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
@@ -139,6 +141,8 @@ void _noticeProcessor(void* arg,const char* cString) {
 -(void)_socketCallbackConnectEndedWithStatus:(PostgresPollingStatusType)pqstatus {
 //::	NSParameterAssert(_callback!=nil);
 //::	void (^callback)(BOOL usedPassword,NSError* error) = (__bridge void (^)(BOOL,NSError* ))(_callback);
+    if( ![((PGConnectionOperation*)[self currentPoolOperation]) valid] )
+        return;
     
      _callbackOperation =  [((PGConnectionOperation*)[self currentPoolOperation]) getCallback];
     void (^callback)(BOOL usedPassword,NSError* error ) = (__bridge void (^)( BOOL,NSError*  ))( _callbackOperation );
@@ -146,7 +150,7 @@ void _noticeProcessor(void* arg,const char* cString) {
 	BOOL needsPassword = PQconnectionNeedsPassword(_connection) ? YES : NO;
 	BOOL usedPassword = PQconnectionUsedPassword(_connection) ? YES : NO;
 #if defined DEBUG && defined DEBUG2
-				NSLog(@"%@ (%p) :: BEGIN :: - Read::end - %@ ::  free (callback %p)", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), callback);
+				NSLog(@"%@ (%p) :: BEGIN :: - Read::BEGIN - %@ ::  free (callback %p)", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), callback);
 #endif
 	// update the status
 	[self setState:PGConnectionStateNone];
@@ -157,7 +161,10 @@ void _noticeProcessor(void* arg,const char* cString) {
 	if(pqstatus==PGRES_POLLING_OK) {
 		// set up notice processor, set success condition
 		PQsetNoticeProcessor(_connection,_noticeProcessor,(__bridge void *)(self));
+        [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
 		callback(usedPassword ? YES : NO,nil);
+            [((PGConnectionOperation*)[self masterPoolOperation]) validate];
+
 	} else if(needsPassword) {
 		// error callback - connection not made, needs password
 		callback(NO,[self raiseError:nil code:PGClientErrorNeedsPassword]);
@@ -170,12 +177,13 @@ void _noticeProcessor(void* arg,const char* cString) {
 	}
     
 #if defined DEBUG && defined DEBUG2
-				NSLog(@"%@ (%p) :: END :: - Read::end - %@ ::  free (callback %p)", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), callback);
+				NSLog(@"%@ (%p) :: END :: - Read::END - %@ ::  free (callback %p)", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), callback);
 #endif
     // :: TODO  ::
     //::    _callback = nil;
 //
-    [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
+//    [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
+//    [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
 //    [self pushPoolOperation];
 }
 
@@ -202,7 +210,12 @@ void _noticeProcessor(void* arg,const char* cString) {
  */
 -(void)_socketCallbackConnect {
 	// ignore this call if either connection or callback are nil
-    if(_connection==nil || ![[self currentPoolOperation] valid]) { // || (_callback==nil) // && _callbackOperation == nil)
+    
+    PGConnectionOperation* currentpoolOpe = [self currentPoolOperation];
+    if(_connection==nil
+//       || ![[self currentPoolOperation] valid]
+       || ( [currentpoolOpe poolIdentifier]) !=0
+       ) { // || (_callback==nil) // && _callbackOperation == nil)
 		return;
 	}
 
@@ -265,8 +278,13 @@ void _noticeProcessor(void* arg,const char* cString) {
 	 
 //
     NSParameterAssert([[self currentPoolOperation] valid]);
+    
+    PGConnectionOperation* currentPoolOperation = [self currentPoolOperation];
+    
 //::    void (^callback)(PGResult* result,NSError* error) = (__bridge void (^)(PGResult* ,NSError* ))(_callback);
+    
     void (^callback)(PGResult* result,NSError* error) = (__bridge void (^)(PGResult* ,NSError* ))( [((PGConnectionOperation*)[self currentPoolOperation]) getCallback] );
+    
     #if defined DEBUG && defined DEBUG2
             NSLog(@":::: PGConnectionStateQuery(%@::%p) - Read BEGIN - Result - :: callback  \n_callback :: (%@)\n ********************************* ",NSStringFromClass([self class]), self  , callback  );
     #endif
@@ -302,7 +320,7 @@ void _noticeProcessor(void* arg,const char* cString) {
 			PQclear(result);
 		} else {
 #if defined DEBUG && defined DEBUG2
-            NSLog(@"PGConnectionStateQuery - Read - Result - READ Query RESULT" );
+            NSLog(@"PGConnectionStateQuery - Read - Result - READ Query RESULT (%@)",[currentPoolOperation queryString] );
 #endif
 			// TODO: allocate a different kind of class
 			r = [[PGResult alloc] initWithResult:result format:[self tupleFormat]];
@@ -326,10 +344,13 @@ void _noticeProcessor(void* arg,const char* cString) {
 #if defined DEBUG && defined DEBUG2
                 NSLog(@"PGConnectionStateQuery - Read - callback %p ",callback);
 #endif
+              
 				callback(r,error);
+                [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
+                [((PGConnectionOperation*)[self masterPoolOperation]) validate];
             });
           
-//            break;
+            break;
 		}
 	}
 #if defined DEBUG && defined DEBUG2
@@ -339,8 +360,8 @@ void _noticeProcessor(void* arg,const char* cString) {
 	[self setState:PGConnectionStateNone];
 
 //::	_callback = nil; // release the callback
-    
-    [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
+    [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
+//    [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
     
 	[self _updateStatus];
 #if defined DEBUG && defined DEBUG2

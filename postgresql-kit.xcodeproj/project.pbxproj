@@ -818,7 +818,7 @@
 		6EBDEA4F1AF3826A009CC810 /* PGSettingsRule.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGSettingsRule.m; sourceTree = "<group>"; };
 		6EBDEA521AF38A92009CC810 /* PGSettingsArray_testcases.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGSettingsArray_testcases.m; sourceTree = "<group>"; };
 		6EBDEA681AF38B09009CC810 /* PGServerKit_unittests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PGServerKit_unittests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		6EBDEA691AF38B09009CC810 /* PGClientKit_unittests copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "PGClientKit_unittests copy-Info.plist"; path = "/Volumes/Users/djt/Projects/postgresql-kit/PGClientKit_unittests copy-Info.plist"; sourceTree = "<absolute>"; };
+		6EBDEA691AF38B09009CC810 /* PGClientKit_unittests copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "PGClientKit_unittests copy-Info.plist"; sourceTree = "<group>"; };
 		6EC5E6771AD7B55900774D57 /* PGQueryInsert.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PGQueryInsert.h; sourceTree = "<group>"; };
 		6EC5E6781AD7B55900774D57 /* PGQueryInsert.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGQueryInsert.m; sourceTree = "<group>"; };
 		6EC5E67E1AD7BDDE00774D57 /* PGQueryUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PGQueryUpdate.h; sourceTree = "<group>"; };
@@ -2870,7 +2870,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CLANG_ENABLE_OBJC_ARC = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_OPTIMIZATION_LEVEL = s;
 				OTHER_CFLAGS = "-I/usr/local/include";
 				SDKROOT = macosx;
 			};

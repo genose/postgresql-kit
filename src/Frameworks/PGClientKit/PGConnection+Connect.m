@@ -105,7 +105,7 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 	NSParameterAssert(_connection==nil);
 	NSParameterAssert(_socket==nil);
 	NSParameterAssert(_runloopsource==nil);
-
+   [NSThread detachNewThreadWithBlock:^{
 	// extract connection parameters
 	NSDictionary* parameters = [self _connectionParametersForURL:url];
 	if(parameters==nil) {
@@ -145,10 +145,12 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
     // not quite good for cascaded Operation
 //::	_callback = (__bridge_retained void* )[callback copy];
     // So we do good things to deal with cascaded Operation
+ 
     [self addOperation:self withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
 
 	// add socket to run loop
 	[self _socketConnect:PGConnectionStateConnect];
+    }];
 }
 
 -(BOOL)connectWithURL:(NSURL* )url usedPassword:(BOOL* )usedPassword error:(NSError** )error {

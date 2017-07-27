@@ -33,18 +33,21 @@
     id      _operation;
     id      _operationInfo;
     id      _operationType;
-    NSInteger poolRefIdentifier;
-    NSInteger operationStatus;
-    bool invalidated;
+    NSInteger _poolRefIdentifier;
+    NSInteger _operationStatus;
+    bool _invalidated;
 }
 //(void(^)(id result,NSError* error)) 
 -(instancetype)initWithParametersDelegate:(id)connectionDelegate withRefPoolIdentifier:(NSInteger)poolIdentifier refClassOperation:(id)operation callWhenDone:(void*) callBackBlockDone callWhenError:(void(^)(id result,NSError* error))  callBackBlockError;
 
 -(PGConnection*)getConnectionDelegate;
+-(NSInteger)poolIdentifier;
+
 -(id)queryString;
 -(id)UTF8String;
 
 -(bool)valid;
+-(void)validate;
 -(void)invalidate;
 -(void *)getCallback;
 
