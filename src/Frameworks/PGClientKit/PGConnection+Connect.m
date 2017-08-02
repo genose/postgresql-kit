@@ -105,7 +105,14 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 	NSParameterAssert(_connection==nil);
 	NSParameterAssert(_socket==nil);
 	NSParameterAssert(_runloopsource==nil);
-   [NSThread detachNewThreadWithBlock:^{
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+    [NSThread detachNewThreadWithBlock:^{
+#else
+
+//     dispatch_async(dispatch_get_main_queue(),^{
+#endif
+
+
 	// extract connection parameters
 	NSDictionary* parameters = [self _connectionParametersForURL:url];
 	if(parameters==nil) {
@@ -147,10 +154,40 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
     // So we do good things to deal with cascaded Operation
  
     [self addOperation:self withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+    } ];
+#else
 
+//                   } );
+#endif
 	// add socket to run loop
-	[self _socketConnect:PGConnectionStateConnect];
-    }];
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+    [NSThread detachNewThreadWithBlock:^
+#else
+//        dispatch_get_current_queue
+//             dispatch_async(dispatch_get_current_queue(),^
+#endif
+        {
+            [self _socketConnect:PGConnectionStateConnect];
+//            CFRunLoopRun();
+//    [self performSelector:@selector(_waitingPoolOperationForResult) withObject:self ];
+//    [self performSelector:@selector(_waitingPoolOperationForResultMaster) withObject:self ];
+
+#if defined DEBUG && defined DEBUG2
+            NSLog(@" ------- %@ :: %@ :::: Connection STOPPed ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
+#endif
+            
+        }
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+    ]
+#else
+    
+//    )
+#endif
+            ;
+#if defined DEBUG && defined DEBUG2
+     NSLog(@" ------- %@ :: %@ :::: Connection Started ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
+#endif
 }
 
 -(BOOL)connectWithURL:(NSURL* )url usedPassword:(BOOL* )usedPassword error:(NSError** )error {

@@ -24,11 +24,13 @@
 
 #import <PGClientKit/PGClientKit.h>
 #import <PGClientKit/PGClientKit+Private.h>
-
+#include <sys/fcntl.h>
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark C callback functions
 ////////////////////////////////////////////////////////////////////////////////
 
+
+//typedef struct __shared_blob soctted ;
 /**
  *  This method is called from the run loop upon new data being available to read
  *  on the socket, or the socket being able to write more data to the socket
@@ -73,23 +75,43 @@ void _noticeProcessor(void* arg,const char* cString) {
 	
 	// create socket object
 	CFSocketContext context = {0, (__bridge void* )(self), NULL, NULL, NULL};
-	_socket = CFSocketCreateWithNative(NULL,PQsocket(_connection),kCFSocketReadCallBack | kCFSocketWriteCallBack,&_socketCallback,&context);
+	_socket = CFSocketCreateWithNative(kCFAllocatorDefault,PQsocket(_connection),kCFSocketReadCallBack | kCFSocketWriteCallBack,&_socketCallback,&context);
+
+//    _socket = CFSocketCreate(kCFAllocatorDefault, 0, 0, 0, kCFSocketReadCallBack | kCFSocketWriteCallBack,&_socketCallback,&context);
+
 	NSParameterAssert(_socket && CFSocketIsValid(_socket));
 	// let libpq do the socket closing
 	CFSocketSetSocketFlags(_socket,~kCFSocketCloseOnInvalidate & CFSocketGetSocketFlags(_socket));
-	
+//    CFSocketEnableCallBacks(_socket, kCFSocketDataCallBack | kCFSocketReadCallBack | kCFSocketWriteCallBack);
+    
+  
+    dispatch_source_t dsrc = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,  dispatch_get_current_queue() );
+    
+    dispatch_source_set_timer(dsrc, dispatch_time(DISPATCH_TIME_NOW, 0), NSEC_PER_SEC / 2, NSEC_PER_SEC);
+    
+//	cf(_socket, F_SETFL,  O_NONBLOCK);
 	// set state
 	[self setState:state];
 	[self _updateStatus];
 	
 	// add to run loop to begin polling
-	_runloopsource = CFSocketCreateRunLoopSource(NULL,_socket,0);
+	_runloopsource = CFSocketCreateRunLoopSource(NULL,_socket,128);
 	NSParameterAssert(_runloopsource && CFRunLoopSourceIsValid(_runloopsource));
 	CFRunLoopAddSource(
-                       CFRunLoopGetMain(), // CFRunLoopGetCurrent()
+//                       CFRunLoopGetMain(),
+                        CFRunLoopGetCurrent(),
                        _runloopsource,(CFStringRef)kCFRunLoopCommonModes);
 #if defined DEBUG && defined DEBUG2
     NSLog(@"%@ :: %@ :::: Socket created ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
+#endif
+    
+    dispatch_semaphore_t semaphore_query_send = [[self masterPoolOperation] semaphore];
+    [self wait_semaphore_read: semaphore_query_send ];
+    
+    
+//    CFRunLoopRun();//(kCFRunLoopDefaultMode, 0.2 , NO);
+#if defined DEBUG && defined DEBUG2
+    NSLog(@" ------- %@ :: %@ :::: Socket Runloop Started ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
 }
 
@@ -161,10 +183,41 @@ void _noticeProcessor(void* arg,const char* cString) {
 	if(pqstatus==PGRES_POLLING_OK) {
 		// set up notice processor, set success condition
 		PQsetNoticeProcessor(_connection,_noticeProcessor,(__bridge void *)(self));
-        [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
-		callback(usedPassword ? YES : NO,nil);
-            [((PGConnectionOperation*)[self masterPoolOperation]) validate];
-
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+        [NSThread detachNewThreadWithBlock:^
+#else
+         
+          [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
+         dispatch_semaphore_t ss = dispatch_semaphore_create(0);
+         
+         mach_port_t machTID = pthread_mach_thread_np(pthread_self());
+         
+         const char * queued_name = [[NSString stringWithFormat:@"%s_%x", "operation_dispacthed_threads", machTID ] cString];
+         
+         NSLog(@" //// %s ", queued_name);
+         
+         dispatch_queue_t queue = dispatch_queue_create(queued_name, DISPATCH_QUEUE_CONCURRENT);
+         
+         dispatch_barrier_async(queue,^
+#endif
+        {
+           
+            callback(usedPassword ? YES : NO,nil);
+             dispatch_semaphore_signal(ss);
+            
+        }
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+          ]
+#else
+        
+                           )
+#endif
+        ;
+//          dispatch_semaphore_wait(ss,DISPATCH_TIME_FOREVER);
+         [self wait_semaphore_read:ss];
+//
+         [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
+//         dispatch_destroy(queue);
 	} else if(needsPassword) {
 		// error callback - connection not made, needs password
 		callback(NO,[self raiseError:nil code:PGClientErrorNeedsPassword]);
@@ -339,8 +392,8 @@ void _noticeProcessor(void* arg,const char* cString) {
             
             
 			
-			// queue up callback on main thread
-			dispatch_async(dispatch_get_main_queue(),^{
+			// queue up callback on nearest thread
+			dispatch_async(dispatch_get_current_queue(),^{
 #if defined DEBUG && defined DEBUG2
                 NSLog(@"PGConnectionStateQuery - Read - callback %p ",callback);
 #endif
@@ -367,6 +420,7 @@ void _noticeProcessor(void* arg,const char* cString) {
 #if defined DEBUG && defined DEBUG2
     NSLog(@"PGConnectionStateQuery - Read END - Result - Clear::End " );
 #endif
+            _stateOperation = PGOperationStateNone;
 }
 
 /**

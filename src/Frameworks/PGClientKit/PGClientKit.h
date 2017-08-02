@@ -14,6 +14,61 @@
 
 #import <Foundation/Foundation.h>
 
+typedef struct __CFRuntimeBase {
+    uintptr_t _cfisa;
+    uint8_t _cfinfo[4];
+#if __LP64__
+    uint32_t _rc;
+#endif
+} CFRuntimeBase;
+
+
+struct __shared_blob {
+    __unsafe_unretained dispatch_source_t _rdsrc;
+    __unsafe_unretained dispatch_source_t _wrsrc;
+    __unsafe_unretained CFRunLoopSourceRef _source;
+    __unsafe_unretained CFSocketNativeHandle _socket;
+    uint8_t _closeFD;
+    uint8_t _refCnt;
+};
+
+struct __CFSocket {
+    __unsafe_unretained CFRuntimeBase _base;
+    __unsafe_unretained struct __shared_blob *_shared; // non-NULL when valid, NULL when invalid
+    
+    uint8_t _state:2;         // mutable, not written safely
+    uint8_t _isSaneFD:1;      // immutable
+    uint8_t _connOriented:1;  // immutable
+    uint8_t _wantConnect:1;   // immutable
+    uint8_t _wantWrite:1;     // immutable
+    uint8_t _wantReadType:2;  // immutable
+    
+    uint8_t _error;
+    
+    uint8_t _rsuspended:1;
+    uint8_t _wsuspended:1;
+    uint8_t _readable:1;
+    uint8_t _writeable:1;
+    uint8_t _unused:4;
+    
+    uint8_t _reenableRead:1;
+    uint8_t _readDisabled:1;
+    uint8_t _reenableWrite:1;
+    uint8_t _writeDisabled:1;
+    uint8_t _connectDisabled:1;
+    uint8_t _connected:1;
+    uint8_t _leaveErrors:1;
+    uint8_t _closeOnInvalidate:1;
+    
+    int32_t _runLoopCounter;
+    
+    CFDataRef _address;         // immutable, once created
+    CFDataRef _peerAddress;     // immutable, once created
+    CFSocketCallBack _callout;  // immutable
+    CFSocketContext _context;   // immutable
+};
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // typedefs

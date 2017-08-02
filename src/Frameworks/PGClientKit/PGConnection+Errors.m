@@ -74,9 +74,21 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
 #endif
 //		[[self delegate] connection:self error:error];
 // @{@"connection":self, @"error":error}
-        [NSThread detachNewThreadWithBlock:^{
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+        [NSThread detachNewThreadWithBlock:
+#else
+
+         dispatch_async(dispatch_get_main_queue(),
+#endif
+^{
             	[[self delegate] connection:self error:error];
-        }];
+}
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+];
+#else
+);
+#endif
+
 //        [NSThread detachNewThreadSelector:@selector(connection:error:) toTarget:[self delegate] withObject:nil ];
     }else{
 #if defined DEBUG && defined DEBUG2

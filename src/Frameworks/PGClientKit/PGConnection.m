@@ -75,6 +75,7 @@ NSString* PGConnectionHostKey = @"Host";
         _connection = nil;
         _cancel = nil;
         //		_callback = nil;
+                _stateOperation = PGOperationStateNone;
         _callbackOperation = nil;
         _callbackOperationPool = CFArrayCreateMutable(NULL, 64, &kCFTypeArrayCallBacks);
         //        (NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -418,13 +419,16 @@ NSString* PGConnectionHostKey = @"Host";
 
         
         
-        if([((PGConnectionOperation*)currentPoolOpe) valid]
-           && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0
+        if(
+           ([((PGConnectionOperation*)currentPoolOpe) valid] && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0 )
+//           && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0
+           || (_stateOperation)
            )
         {
-//            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
-//           isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-//            [NSThread sleepForTimeInterval:.1];
+            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
+            isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+            isRunning = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+            [NSThread sleepForTimeInterval:.1];
 //            NSLog(@" >>>>> :::: %@ .... %d",NSStringFromSelector(_cmd),isRunning);
             
 //            return;

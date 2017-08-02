@@ -77,6 +77,12 @@ typedef enum {
 	PGClientTupleFormatBinary = 1
 } PGClientTupleFormat;
 
+typedef enum {
+    PGOperationStateNone    = 0,
+    PGOperationStatePrepare = 1,
+    PGOperationStateBusy    = 4
+} PGOperationState;
+
 @class PGConnectionOperation;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,6 +98,7 @@ typedef enum {
 	CFRunLoopSourceRef _runloopsource;
 	NSUInteger _timeout;
 	PGConnectionState _state;
+    PGOperationState _stateOperation;
 	NSDictionary* _parameters;
 	PGClientTupleFormat _tupleFormat;
 }
@@ -196,6 +203,8 @@ typedef enum {
 -(id)invalidateOperation:(NSInteger)operationRefIndex;
 -(void)_waitingPoolOperationForResult;
 -(void)_waitingPoolOperationForResultMaster;
+
+-(void)wait_semaphore_read:(dispatch_semaphore_t) sem;
 
 @end
 

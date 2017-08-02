@@ -36,11 +36,14 @@
     NSInteger _poolRefIdentifier;
     NSInteger _operationStatus;
     bool _invalidated;
+    dispatch_semaphore_t semaphore;
 }
 //(void(^)(id result,NSError* error)) 
 -(instancetype)initWithParametersDelegate:(id)connectionDelegate withRefPoolIdentifier:(NSInteger)poolIdentifier refClassOperation:(id)operation callWhenDone:(void*) callBackBlockDone callWhenError:(void(^)(id result,NSError* error))  callBackBlockError;
 
 -(PGConnection*)getConnectionDelegate;
+
+-(dispatch_semaphore_t)semaphore;
 -(NSInteger)poolIdentifier;
 
 -(id)queryString;

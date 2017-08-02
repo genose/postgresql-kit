@@ -58,6 +58,9 @@
         _callbackWhenDone = (__bridge_retained void* )([(__bridge void (^)(void* ,void* ))(callBackBlockDone)  copy]);//(__bridge void (^)(PGResult* ,NSError* ))(callBackBlockDone);
         _callbackWhenError = (__bridge_retained void* )([(__bridge void (^)(void* ,void* ))(callBackBlockError)   copy]);//(__bridge void (^)(PGResult* ,NSError* ))(callBackBlockDone);
         _invalidated = NO;
+        
+        semaphore = dispatch_semaphore_create(0);
+        
     }else{
         return nil;
     }
@@ -92,7 +95,10 @@
     return _poolRefIdentifier;
     
 }
-
+-(dispatch_semaphore_t)semaphore
+{
+    return semaphore;
+}
 -(void *)getCallback
 {
 //    if(invalidated){

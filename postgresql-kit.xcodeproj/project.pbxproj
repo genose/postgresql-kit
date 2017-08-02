@@ -2861,7 +2861,7 @@
 				);
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_CFLAGS = "-I/usr/local/include";
-				SDKROOT = macosx;
+				SDKROOT = macosx10.10;
 				STRIP_INSTALLED_PRODUCT = NO;
 			};
 			name = Debug;
@@ -2872,7 +2872,7 @@
 				CLANG_ENABLE_OBJC_ARC = YES;
 				GCC_OPTIMIZATION_LEVEL = s;
 				OTHER_CFLAGS = "-I/usr/local/include";
-				SDKROOT = macosx;
+				SDKROOT = macosx10.10;
 			};
 			name = Release;
 		};

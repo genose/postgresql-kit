@@ -21,7 +21,7 @@
 // PRIVATE METHODS
 
 +(NSString* )_pg_urlencode:(NSString* )string {
-#if __IPHONE_OS_VERSION_MIN_REQUIRED  >= __IPHONE_10_0 || MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_10
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
 //    NSCharacterSet *allowedCharset = [NSCharacterSet characterSetWithCharactersInString:@"!*'();:@&=+$,/?%#[]"];
      NSCharacterSet *allowedCharset = [NSCharacterSet URLQueryAllowedCharacterSet ];
     return (NSString* ) [string stringByAddingPercentEncodingWithAllowedCharacters:allowedCharset  ]  ;
@@ -295,7 +295,7 @@
 			return nil;
 		}
         
-#if __IPHONE_OS_VERSION_MIN_REQUIRED  >= __IPHONE_10_0 || MAC_OS_X_VERSION_MIN_REQUIRED > MAC_OS_X_VERSION_10_10
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
         
         NSCharacterSet *allowedCharset = [NSCharacterSet  URLPathAllowedCharacterSet];
         

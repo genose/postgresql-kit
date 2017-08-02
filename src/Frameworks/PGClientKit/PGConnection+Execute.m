@@ -25,6 +25,53 @@
 #import <PGClientKit/PGClientKit.h>
 #import <PGClientKit/PGClientKit+Private.h>
 
+#import <objc/runtime.h>
+#import <dlfcn.h>
+#import <sys/ioctl.h>
+
+
+
+#define INVALID_SOCKET (CFSocketNativeHandle)(-1)
+
+#define closesocket(a) close((a))
+#define ioctlsocket(a,b,c) ioctl((a),(b),(c))
+
+CF_INLINE Boolean __CFSocketIsValid(CFSocketRef s);
+
+static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
+    CFSocketRef sock = (CFSocketRef)cf;
+    CFStringRef contextDesc = NULL;
+    if (NULL != sock->_context.info && NULL != sock->_context.copyDescription) {
+        contextDesc = sock->_context.copyDescription(sock->_context.info);
+    }
+    if (NULL == contextDesc) {
+        contextDesc = CFStringCreateWithFormat(kCFAllocatorSystemDefault, NULL, CFSTR("<CFSocket context %p>"), sock->_context.info);
+    }
+    Dl_info info;
+    void *addr = sock->_callout;
+    const char *name = (dladdr(addr, &info) && info.dli_saddr == addr && info.dli_sname) ? info.dli_sname : "???";
+    int avail = -1;
+    ioctlsocket(sock->_shared ? sock->_shared->_socket : -1, FIONREAD, &avail);
+    CFStringRef result = CFStringCreateWithFormat(kCFAllocatorSystemDefault, NULL, CFSTR(
+                                                                                         "<CFSocket %p [%p]>{valid = %s, socket = %d, "
+                                                                                         "want connect = %s, connect disabled = %s, "
+                                                                                         "want write = %s, reenable write = %s, write disabled = %s, "
+                                                                                         "want read = %s, reenable read = %s, read disabled = %s, "
+                                                                                         "leave errors = %s, close on invalidate = %s, connected = %s, "
+                                                                                         "last error code = %d, bytes available for read = %d, "
+                                                                                         "source = %p, callout = %s (%p), context = %@}"),
+                                                  cf, CFGetAllocator(sock), (sock) ? "Yes" : "No", sock->_shared ? sock->_shared->_socket : -1,
+                                                  sock->_wantConnect ? "Yes" : "No", sock->_connectDisabled ? "Yes" : "No",
+                                                  sock->_wantWrite ? "Yes" : "No", sock->_reenableWrite ? "Yes" : "No", sock->_writeDisabled ? "Yes" : "No",
+                                                  sock->_wantReadType ? "Yes" : "No", sock->_reenableRead ? "Yes" : "No", sock->_readDisabled? "Yes" : "No",
+                                                  sock->_leaveErrors ? "Yes" : "No", sock->_closeOnInvalidate ? "Yes" : "No", sock->_connected ? "Yes" : "No",
+                                                  sock->_error, avail,
+                                                  sock->_shared ? sock->_shared->_source : NULL, name, addr, contextDesc);
+    if (NULL != contextDesc) {
+        CFRelease(contextDesc);
+    }
+    return result;
+}
 @implementation PGConnection (Execute)
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +167,7 @@
     
     NSParameterAssert(_callbackOperation!=nil);
     
-    //    [NSThread sleepForTimeInterval: .2];
+    [NSThread sleepForTimeInterval: .2];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -130,52 +177,191 @@
 -(void)execute:(id)query whenDone:(void(^)(PGResult* result,NSError* error)) callback {
     
     
-    
     //    if([((PGConnectionOperation*)[self currentPoolOperation]) valid])
     //        if([((PGConnectionOperation*)[self currentPoolOperation]) poolIdentifier] !=0 ){
     
     //        [NSThread detachNewThreadSelector:_cmd toTarget:self withObject:nil ];
-//    if([((PGConnectionOperation*)[self currentPoolOperation]) poolIdentifier] !=0 )
+    //    if([((PGConnectionOperation*)[self currentPoolOperation]) poolIdentifier] !=0 )
     
-
+    _stateOperation = PGOperationStatePrepare;
+    
     
     //        }
-    [NSThread detachNewThreadWithBlock:^{
-//        [self performSelectorOnMainThread:@selector(_waitingPoolOperationForResult) withObject:self waitUntilDone:YES ];
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+    [NSThread detachNewThreadWithBlock:^
+#else
+     
+//     dispatch_queue_t queue_inRun = ( ( dispatch_get_current_queue() == dispatch_get_main_queue() )? dispatch_get_main_queue() : dispatch_get_current_queue() );
+     mach_port_t machTID = pthread_mach_thread_np(pthread_self());
+     
+     const char * queued_name = [[NSString stringWithFormat:@"%s_%x", "query_operation_dispacthed_threads", machTID ] cString];
+     
+     NSLog(@" //// %s ", queued_name);
+     
+     dispatch_queue_t queue_inRun = dispatch_queue_create(queued_name, DISPATCH_QUEUE_CONCURRENT);
+     
+               dispatch_barrier_sync(queue_inRun,^
+#endif
+     
+     {
+         //        [self performSelectorOnMainThread:@selector(_waitingPoolOperationForResult) withObject:self waitUntilDone:YES ];
+         
+         
+         NSParameterAssert([query isKindOfClass:[NSString class]] || [query isKindOfClass:[PGQuery class]]);
+         NSParameterAssert(callback);
+         NSString* query2 = nil;
+         NSError* error = nil;
+         if([query isKindOfClass:[NSString class]]) {
+             query2 = query;
+         } else {
+             query2 = [(PGQuery* )query quoteForConnection:self error:&error];
+         }
+         if(error) {
+#if defined DEBUG && defined DEBUG2
+             NSLog(@"%@ :: %@ - query ERROR - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
+#endif
+             callback(nil,error);
+         } else if(query2==nil) {
+             callback(nil,[self raiseError:nil code:PGClientErrorExecute reason:@"Query is nil"]);
+         } else {
+#if defined DEBUG && defined DEBUG2
+             NSLog(@"%@ :: %@ - query - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
+#endif
+             void (^callback_recall)(PGResult* result,NSError* error) =   ^(PGResult* result_recall ,NSError* error_recall)
+             {
+                 NSLog(@" .... semaphore callback..... ");
+                 callback(result_recall , error_recall);
+                 NSLog(@" .... semaphore pass ..... ");
+                 dispatch_semaphore_signal( [[self currentPoolOperation] semaphore] );
+                 NSLog(@" .... semaphore signal end ..... ");
+                 
+             };
+             //            dispatch_semaphore_signal(semaphore_query_send);
+             [self _execute:query2 values:nil whenDone: callback_recall];
+             
+         }
+     }
+     
+#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+     ]
+#else
+    
+         )
+#endif
+    ;
+    
+    //    [self performSelector:@selector(_waitingPoolOperationForResult) withObject:self ];
+    //    [self performSelector:@selector(_waitingPoolOperationForResultMaster) withObject:self ];
+    
+    _stateOperation = PGOperationStateBusy;
+    [NSThread sleepForTimeInterval:.2];
+    NSLog(@"Is main queue? : %d", dispatch_get_current_queue() == dispatch_get_main_queue());
+    dispatch_semaphore_t semaphore_query_send = [[self currentPoolOperation] semaphore];
+    [self wait_semaphore_read: semaphore_query_send ];
+    NSLog(@"I will see this, after dispatch_semaphore_signal is called");
+}
+-(void)wait_semaphore_read:(dispatch_semaphore_t) sem
+{
+     mach_port_t machTID = pthread_mach_thread_np(pthread_self());
+    const char * queued_name = [[NSString stringWithFormat:@"%@_%x  :: %s  :: %s :: %@ ", NSStringFromSelector(_cmd), machTID, dispatch_queue_get_label(dispatch_get_current_queue()), dispatch_queue_get_label(dispatch_get_main_queue()), sem ] cString];
+    
+    NSLog(@" //// %s ", queued_name);
+    
+    long diispacthed = YES;
+    
+    NSTimeInterval resolutionTimeOut = 0.05;
+    NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
+    bool isRunningThreadMain = YES;
+    bool isRunningThread = YES;
+    while( diispacthed  && _runloopsource )
+    {
         
         
-        NSParameterAssert([query isKindOfClass:[NSString class]] || [query isKindOfClass:[PGQuery class]]);
-        NSParameterAssert(callback);
-        NSString* query2 = nil;
-        NSError* error = nil;
-        if([query isKindOfClass:[NSString class]]) {
-            query2 = query;
-        } else {
-            query2 = [(PGQuery* )query quoteForConnection:self error:&error];
+        diispacthed = dispatch_semaphore_wait(sem,DISPATCH_TIME_NOW);
+        dispatch_queue_t qq_qq = dispatch_get_current_queue();
+        
+        id shared_info = (__bridge id)(_socket);
+        CFSocketCallBack shared_info_shared = (_socket->_callout);
+        const char * class_named = object_getClassName(shared_info);
+        
+        CFSocketNativeHandle sock = CFSocketGetNative(_socket);
+        
+        struct __shared_blob *shared_dd = malloc(sizeof(struct __shared_blob));
+        
+        NSLog(@"%s", __CFFSocketCopyDescription(_socket));
+        
+//        shared_dd->_rdsrc = (_socket->_shared)->_rdsrc;
+//        shared_dd->_wrsrc = (_socket->_shared)->_wrsrc;
+//        shared_dd->_source = (_socket->_shared)->_source;
+//        shared_dd->_socket = (_socket->_shared)->_socket;
+//        shared_dd->_closeFD = (_socket->_shared)->_closeFD ;
+//        shared_dd->_refCnt = (_socket->_shared)->_refCnt;
+        
+//        objc_mem(&shared_dd, *(_socket->_shared) , sizeof(struct __shared_blob));
+        
+        unsigned int outCount, i;
+        objc_property_t *objcProperties = class_copyPropertyList([shared_info class], &outCount);
+        for (i = 0; i < outCount; i++) {
+            objc_property_t property = objcProperties[i];
+            const char *propName = property_getName(property);
+            if(propName) {
+//                const char * propType = getPropertyType(property);
+                NSString * propertyName = [NSString stringWithUTF8String:propName];
+                
+            }
         }
-        if(error) {
-#if defined DEBUG && defined DEBUG2
-            NSLog(@"%@ :: %@ - query ERROR - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
-#endif
-            callback(nil,error);
-        } else if(query2==nil) {
-            callback(nil,[self raiseError:nil code:PGClientErrorExecute reason:@"Query is nil"]);
-        } else {
-#if defined DEBUG && defined DEBUG2
-            NSLog(@"%@ :: %@ - query - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
-#endif
-            
-            
-            
-            [self _execute:query2 values:nil whenDone: callback];
-            
+        
+//        [((NSObject*)shared_info) shared];
+        id sockk = (__bridge id)((_socket)->_shared);
+        
+//        typedef struct __CFSocket sockt;
+//        
+//        dispatch_object_t disp_obj = (dispatch_object_t) ((shared_info*)->_shared->_rdsrc);
+//        dispatch_resume( ((dispatch_object_t) disp_obj)  );;
+        if( diispacthed && !isRunningThreadMain && !isRunningThreadMain
+           && [[self currentPoolOperation] valid]
+           )
+            [NSThread sleepForTimeInterval:.01];
+        
+        CFRunLoopSourceSignal(_runloopsource);
+        CFRunLoopWakeUp(CFRunLoopGetMain());
+        
+       
+        isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
+        if(!isRunningThreadMain)
+        {
+             [NSThread sleepForTimeInterval:.01];;
         }
-    }];
-
-    [self performSelector:@selector(_waitingPoolOperationForResult) withObject:self ];
-    [self performSelector:@selector(_waitingPoolOperationForResultMaster) withObject:self ];
-    
-    
+        
+        isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+        if(!isRunningThreadMain)
+        {
+            [NSThread sleepForTimeInterval:.01];;
+        }
+        
+        CFRunLoopSourceSignal(_runloopsource);
+        CFRunLoopWakeUp(CFRunLoopGetCurrent());
+        
+       
+        isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
+        if(!isRunningThread)
+        {
+             [NSThread sleepForTimeInterval:.01];;
+        }
+        
+        isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+        if(!isRunningThread)
+        {
+            [NSThread sleepForTimeInterval:.01];;
+        }
+        
+        if( diispacthed && !isRunningThreadMain && !isRunningThreadMain
+           && [[self currentPoolOperation] valid] && [self connectionPoolOperationCount] > 1
+           && !PQisBusy(_connection) )
+            break;
+        
+    }
+    //         [[NSThread currentThread] cancel];
 }
 
 -(PGResult* )execute:(id)query error:(NSError** )error {
