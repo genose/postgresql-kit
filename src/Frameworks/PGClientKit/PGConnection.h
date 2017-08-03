@@ -205,7 +205,8 @@ typedef enum {
 -(void)_waitingPoolOperationForResultMaster;
 
 -(void)wait_semaphore_read:(dispatch_semaphore_t) sem;
-
+-(void)wait_semaphore_read:(dispatch_semaphore_t) sem withQueue:(dispatch_queue_t)qq_in;
+-(void)dispathCall;
 @end
 
 ////////////////////////////////////////////////////////////////////////////////

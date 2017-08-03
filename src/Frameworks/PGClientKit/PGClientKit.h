@@ -13,6 +13,27 @@
 // under the License.
 
 #import <Foundation/Foundation.h>
+#import <CoreFoundation/CoreFoundation.h>
+
+
+enum {	// Legal level values for CFLog()
+    kCFLogLevelEmergency = 0,
+    kCFLogLevelAlert = 1,
+    kCFLogLevelCritical = 2,
+    kCFLogLevelError = 3,
+    kCFLogLevelWarning = 4,
+    kCFLogLevelNotice = 5,
+    kCFLogLevelInfo = 6,
+    kCFLogLevelDebug = 7,
+};
+
+
+enum {
+    kCFSocketStateReady = 0,
+    kCFSocketStateInvalidating = 1,
+    kCFSocketStateInvalid = 2,
+    kCFSocketStateDeallocating = 3
+};
 
 typedef struct __CFRuntimeBase {
     uintptr_t _cfisa;
@@ -26,88 +47,121 @@ typedef struct __CFRuntimeBase {
 struct __shared_blob {
     __unsafe_unretained dispatch_source_t _rdsrc;
     __unsafe_unretained dispatch_source_t _wrsrc;
-    __unsafe_unretained CFRunLoopSourceRef _source;
-    __unsafe_unretained CFSocketNativeHandle _socket;
+    CFRunLoopSourceRef _source;
+    CFSocketNativeHandle _socket;
     uint8_t _closeFD;
     uint8_t _refCnt;
 };
 
-//struct __CFSocket {
-//    __unsafe_unretained CFRuntimeBase _base;
-//    __unsafe_unretained struct __shared_blob *_shared; // non-NULL when valid, NULL when invalid
-//    
-//    uint8_t _state:2;         // mutable, not written safely
-//    uint8_t _isSaneFD:1;      // immutable
-//    uint8_t _connOriented:1;  // immutable
-//    uint8_t _wantConnect:1;   // immutable
-//    uint8_t _wantWrite:1;     // immutable
-//    uint8_t _wantReadType:2;  // immutable
-//    
-//    uint8_t _error;
-//    
-//    uint8_t _rsuspended:1;
-//    uint8_t _wsuspended:1;
-//    uint8_t _readable:1;
-//    uint8_t _writeable:1;
-//    uint8_t _unused:4;
-//    
-//    uint8_t _reenableRead:1;
-//    uint8_t _readDisabled:1;
-//    uint8_t _reenableWrite:1;
-//    uint8_t _writeDisabled:1;
-//    uint8_t _connectDisabled:1;
-//    uint8_t _connected:1;
-//    uint8_t _leaveErrors:1;
-//    uint8_t _closeOnInvalidate:1;
-//    
-//    int32_t _runLoopCounter;
-//    
-//    CFDataRef _address;         // immutable, once created
-//    CFDataRef _peerAddress;     // immutable, once created
-//    CFSocketCallBack _callout;  // immutable
-//    CFSocketContext _context;   // immutable
-//};
 struct __CFSocket {
     CFRuntimeBase _base;
-    struct {
-        unsigned client:8;	// flags set by client (reenable, CloseOnInvalidate)
-        unsigned disabled:8;	// flags marking disabled callbacks
-        unsigned connected:1;	// Are we connected yet?  (also true for connectionless sockets)
-        unsigned writableHint:1;  // Did the polling the socket show it to be writable?
-        unsigned closeSignaled:1;  // Have we seen FD_CLOSE? (only used on Win32)
-        unsigned unused:13;
-    } _f;
-    CFLock_t _lock;
-    CFLock_t _writeLock;
-    CFSocketNativeHandle _socket;	/* immutable */
-    SInt32 _socketType;
-    SInt32 _errorCode;
-    CFDataRef _address;
-    CFDataRef _peerAddress;
-    SInt32 _socketSetCount;
-    CFRunLoopSourceRef _source0;	// v0 RLS, messaged from SocketMgr
-    CFMutableArrayRef _runLoops;
-    CFSocketCallBack _callout;		/* immutable */
-    CFSocketContext _context;		/* immutable */
-    CFMutableArrayRef _dataQueue;	// queues to pass data from SocketMgr thread
-    CFMutableArrayRef _addressQueue;
+    struct __shared_blob *_shared; // non-NULL when valid, NULL when invalid
+    
+    uint8_t _state:2;         // mutable, not written safely
+    uint8_t _isSaneFD:1;      // immutable
+    uint8_t _connOriented:1;  // immutable
+    uint8_t _wantConnect:1;   // immutable
+    uint8_t _wantWrite:1;     // immutable
+    uint8_t _wantReadType:2;  // immutable
+    
+    uint8_t _error;
+    
+    uint8_t _rsuspended:1;
+    uint8_t _wsuspended:1;
+    uint8_t _readable:1;
+    uint8_t _writeable:1;
+    uint8_t _unused:4;
+    
+    uint8_t _reenableRead:1;
+    uint8_t _readDisabled:1;
+    uint8_t _reenableWrite:1;
+    uint8_t _writeDisabled:1;
+    uint8_t _connectDisabled:1;
+    uint8_t _connected:1;
+    uint8_t _leaveErrors:1;
+    uint8_t _closeOnInvalidate:1;
+    
+    int32_t _runLoopCounter;
+    
+    CFDataRef _address;         // immutable, once created
+    CFDataRef _peerAddress;     // immutable, once created
+    CFSocketCallBack _callout;  // immutable
+    CFSocketContext _context;   // immutable
+} ;
 
-    struct timeval _readBufferTimeout;
-    CFMutableDataRef _readBuffer;
-    CFIndex _bytesToBuffer;			/* is length of _readBuffer */
-    CFIndex _bytesToBufferPos;		/* where the next _CFSocketRead starts from */
-    CFIndex _bytesToBufferReadPos;	/* Where the buffer will next be read into (always after _bytesToBufferPos, but less than _bytesToBuffer) */
-    Boolean _atEOF;
-    int _bufferedReadError;
+//
+//struct __CFCF_CFSocket {
+//    CFRuntimeBase _base;
+//    struct {
+//        unsigned client:8;	// flags set by client (reenable, CloseOnInvalidate)
+//        unsigned disabled:8;	// flags marking disabled callbacks
+//        unsigned connected:1;	// Are we connected yet?  (also true for connectionless sockets)
+//        unsigned writableHint:1;  // Did the polling the socket show it to be writable?
+//        unsigned closeSignaled:1;  // Have we seen FD_CLOSE? (only used on Win32)
+//        unsigned unused:13;
+//    } _f;
+//    SInt32 _lock;
+//    SInt32 _writeLock;
+//    CFSocketNativeHandle _socket;	/* immutable */
+//    SInt32 _socketType;
+//    SInt32 _errorCode;
+//    CFDataRef _address;
+//    CFDataRef _peerAddress;
+//    SInt32 _socketSetCount;
+//    CFRunLoopSourceRef _source0;	// v0 RLS, messaged from SocketMgr
+//    CFMutableArrayRef _runLoops;
+//    CFSocketCallBack _callout;		/* immutable */
+//    CFSocketContext _context;		/* immutable */
+//    CFMutableArrayRef _dataQueue;	// queues to pass data from SocketMgr thread
+//    CFMutableArrayRef _addressQueue;
+//
+//    struct timeval _readBufferTimeout;
+//    CFMutableDataRef _readBuffer;
+//    CFIndex _bytesToBuffer;			/* is length of _readBuffer */
+//    CFIndex _bytesToBufferPos;		/* where the next _CFSocketRead starts from */
+//    CFIndex _bytesToBufferReadPos;	/* Where the buffer will next be read into (always after _bytesToBufferPos, but less than _bytesToBuffer) */
+//    Boolean _atEOF;
+//    int _bufferedReadError;
+//
+//    CFMutableDataRef _leftoverBytes;
+//
+//        // <rdar://problem/17849895>
+//        // If the timeout is set on the CFSocketRef but we never get select() timeout
+//        // because we always have some network events so select never times out (e.g. while having a large download).
+//        // We need to notify any waiting buffered read clients if there is data available without relying on select timing out.
+//    struct timeval _readBufferTimeoutNotificationTime;
+//    Boolean _hitTheTimeout;
+//};
+typedef struct __CFSocket * __CF_CFSocketRef;
+typedef CFStringRef CFRunLoopMode ;
+// CF_EXTENSIBLE_STRING_ENUM;
+struct __CFRunLoop {
+    CFRuntimeBase _base;
+    pthread_mutex_t _lock;			/* locked for accessing mode list */
+    void * _wakeUpPort;			// used for CFRunLoopWakeUp
+    Boolean _ignoreWakeUps;
+    volatile uint32_t *_stopped;
+    pthread_t _pthread;
+    uint32_t _winthread;
+    CFMutableSetRef _commonModes;
+    CFMutableSetRef _commonModeItems;
+    CFRunLoopMode * _currentMode;
+    CFMutableSetRef _modes;
+    struct _block_item *_blocks_head;
+    struct _block_item *_blocks_tail;
+    CFTypeRef _counterpart;
+};
 
-    CFMutableDataRef _leftoverBytes;
-
-        // <rdar://problem/17849895>
-        // If the timeout is set on the CFSocketRef but we never get select() timeout
-        // because we always have some network events so select never times out (e.g. while having a large download).
-        // We need to notify any waiting buffered read clients if there is data available without relying on select timing out.
-    struct timeval _readBufferTimeoutNotificationTime;
-    Boolean _hitTheTimeout;
+struct __CFRunLoopSource {
+    CFRuntimeBase _base;
+    uint32_t _bits;
+    pthread_mutex_t _lock;
+    CFIndex _order;			/* immutable */
+    CFMutableBagRef _runLoops;
+    union {
+        CFRunLoopSourceContext version0;	/* immutable, except invalidation */
+        CFRunLoopSourceContext1 version1;	/* immutable, except invalidation */
+    } _context;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
