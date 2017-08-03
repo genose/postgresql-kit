@@ -326,6 +326,10 @@
 		6EFFF2351A5F04C800CAA6E7 /* PGFoundationApp.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFF2311A5F044E00CAA6E7 /* PGFoundationApp.m */; };
 		6EFFF23A1A5F052A00CAA6E7 /* PGFoundationApp.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFF2311A5F044E00CAA6E7 /* PGFoundationApp.m */; };
 		6EFFF23C1A5F053000CAA6E7 /* Terminal.m in Sources */ = {isa = PBXBuildFile; fileRef = 6EFFF2391A5F051D00CAA6E7 /* Terminal.m */; };
+		74FDBBC21F32531F00606CC3 /* PGConnection+PGConnectionSocket.h in Headers */ = {isa = PBXBuildFile; fileRef = 74FDBBC01F32531F00606CC3 /* PGConnection+PGConnectionSocket.h */; };
+		74FDBBC31F32531F00606CC3 /* PGConnection+PGConnectionSocket.h in Headers */ = {isa = PBXBuildFile; fileRef = 74FDBBC01F32531F00606CC3 /* PGConnection+PGConnectionSocket.h */; };
+		74FDBBC41F32531F00606CC3 /* PGConnection+PGConnectionSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 74FDBBC11F32531F00606CC3 /* PGConnection+PGConnectionSocket.m */; };
+		74FDBBC51F32531F00606CC3 /* PGConnection+PGConnectionSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 74FDBBC11F32531F00606CC3 /* PGConnection+PGConnectionSocket.m */; };
 		C6457D4E1F288DD7005F6686 /* PGConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */; };
 		C6457D4F1F288DD7005F6686 /* PGConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */; };
 		C6457D501F288DD7005F6686 /* PGConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */; };
@@ -853,6 +857,8 @@
 		6EFFF2331A5F044E00CAA6E7 /* PGFoundationServer.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = PGFoundationServer.m; sourceTree = "<group>"; };
 		6EFFF2381A5F051D00CAA6E7 /* Terminal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Terminal.h; sourceTree = "<group>"; };
 		6EFFF2391A5F051D00CAA6E7 /* Terminal.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Terminal.m; sourceTree = "<group>"; };
+		74FDBBC01F32531F00606CC3 /* PGConnection+PGConnectionSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "PGConnection+PGConnectionSocket.h"; sourceTree = "<group>"; };
+		74FDBBC11F32531F00606CC3 /* PGConnection+PGConnectionSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "PGConnection+PGConnectionSocket.m"; sourceTree = "<group>"; };
 		C6457D491F288DD7005F6686 /* PGConnectionOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PGConnectionOperation.h; path = src/Frameworks/PGClientKit/PGConnectionOperation.h; sourceTree = SOURCE_ROOT; };
 		C6457D4A1F288DD7005F6686 /* PGConnectionOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PGConnectionOperation.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -1597,6 +1603,8 @@
 				6E9256B61AA64BDA007DAD82 /* PGConnection+Notifications.m */,
 				6E9256B71AA64BDA007DAD82 /* PGConnection+Ping.m */,
 				6E9256B81AA64BDA007DAD82 /* PGConnection+Reset.m */,
+				74FDBBC01F32531F00606CC3 /* PGConnection+PGConnectionSocket.h */,
+				74FDBBC11F32531F00606CC3 /* PGConnection+PGConnectionSocket.m */,
 			);
 			name = PGConnection;
 			sourceTree = "<group>";
@@ -1826,6 +1834,7 @@
 				1450A15F1AAA145A002D62D9 /* PGQuerySource.h in Headers */,
 				6E15484D1A5819EA00556573 /* PGQuery.h in Headers */,
 				6EC6748B1AD94F8900CAB4FF /* PGConnectionPool.h in Headers */,
+				74FDBBC31F32531F00606CC3 /* PGConnection+PGConnectionSocket.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1867,6 +1876,7 @@
 				6E4016B91ABEFA09009A2707 /* PGTransaction.h in Headers */,
 				1489AEC716669A6B00C3B67D /* PGResult+TextTable.h in Headers */,
 				14DECDA816B57EC400178235 /* PGConverters+Private.h in Headers */,
+				74FDBBC21F32531F00606CC3 /* PGConnection+PGConnectionSocket.h in Headers */,
 				6EC5E6801AD7BDDE00774D57 /* PGQueryUpdate.h in Headers */,
 				1417B7BA1AAA1FF200B44DD4 /* PGQueryObject.h in Headers */,
 				6E0DDCD91AAB2A4000A38F3B /* NSString+PrivateAdditions.h in Headers */,
@@ -2408,6 +2418,7 @@
 				6E9256B31AA64B6C007DAD82 /* PGConnection+Connect.m in Sources */,
 				6E9256A21AA645FC007DAD82 /* PGConnection.m in Sources */,
 				1450A16A1AAA18DA002D62D9 /* PGQueryPredicate.m in Sources */,
+				74FDBBC51F32531F00606CC3 /* PGConnection+PGConnectionSocket.m in Sources */,
 				6E1548461A5819C600556573 /* NSURL+PGAdditions.m in Sources */,
 				6EC6748D1AD94FAC00CAB4FF /* PGTransaction.m in Sources */,
 				6E0DDCE61AAB6F5200A38F3B /* PGQueryDatabase.m in Sources */,
@@ -2533,6 +2544,7 @@
 				6E9256A81AA6481E007DAD82 /* PGConnection+Callbacks.m in Sources */,
 				6E9256BD1AA64BDA007DAD82 /* PGConnection+Notifications.m in Sources */,
 				1489AEC816669A6B00C3B67D /* PGResult+TextTable.m in Sources */,
+				74FDBBC41F32531F00606CC3 /* PGConnection+PGConnectionSocket.m in Sources */,
 				6E9256B21AA64B6C007DAD82 /* PGConnection+Connect.m in Sources */,
 				6E308D061ABD80810091BD17 /* NSError+PGAdditions.m in Sources */,
 				6E82F1741A9BC9B20024B8BE /* PGConnection.m in Sources */,
