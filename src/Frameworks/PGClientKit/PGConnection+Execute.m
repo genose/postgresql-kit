@@ -167,7 +167,7 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
     
     NSParameterAssert(_callbackOperation!=nil);
     
-    [NSThread sleepForTimeInterval: .2];
+    //    [NSThread sleepForTimeInterval: .2];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -189,10 +189,10 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
     //        }
     //     dispatch_queue_t queue_inRun = ( ( dispatch_get_current_queue() == dispatch_get_main_queue() )? dispatch_get_main_queue() : dispatch_get_current_queue() );
     mach_port_t machTID = pthread_mach_thread_np(pthread_self());
+    NSString * queued_name_STR = [NSString stringWithFormat:@"%s_%x", "query_operation_dispacthed_threads", machTID ];
+    const char * queued_name = [queued_name_STR UTF8String];
     
-    const char * queued_name = [[NSString stringWithFormat:@"%s_%x", "query_operation_dispacthed_threads", machTID ] cString];
-    
-    NSLog(@" //// %s ", queued_name);
+    NSLog(@" //// Query dispatch :: %@ ", queued_name_STR);
     
     dispatch_queue_t queue_inRun = dispatch_queue_create(queued_name, DISPATCH_QUEUE_CONCURRENT);
     
@@ -201,335 +201,389 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
 #else
      
      
-     dispatch_barrier_sync(queue_inRun,^
+     //     dispatch_barrier_sync(queue_inRun,^
 #endif
-                           
-                           {
-                               //        [self performSelectorOnMainThread:@selector(_waitingPoolOperationForResult) withObject:self waitUntilDone:YES ];
-                               
-                               
-                               NSParameterAssert([query isKindOfClass:[NSString class]] || [query isKindOfClass:[PGQuery class]]);
-                               NSParameterAssert(callback);
-                               NSString* query2 = nil;
-                               NSError* error = nil;
-                               if([query isKindOfClass:[NSString class]]) {
-                                   query2 = query;
-                               } else {
-                                   query2 = [(PGQuery* )query quoteForConnection:self error:&error];
-                               }
-                               if(error) {
+     
+     {
+         //        [self performSelectorOnMainThread:@selector(_waitingPoolOperationForResult) withObject:self waitUntilDone:YES ];
+         
+         
+         NSParameterAssert([query isKindOfClass:[NSString class]] || [query isKindOfClass:[PGQuery class]]);
+         NSParameterAssert(callback);
+         NSString* query2 = nil;
+         NSError* error = nil;
+         if([query isKindOfClass:[NSString class]]) {
+             query2 = query;
+         } else {
+             query2 = [(PGQuery* )query quoteForConnection:self error:&error];
+         }
+         if(error) {
 #if defined DEBUG && defined DEBUG2
-                                   NSLog(@"%@ :: %@ - query ERROR - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
+             NSLog(@"%@ :: %@ - query ERROR - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
 #endif
-                                   callback(nil,error);
-                               } else if(query2==nil) {
-                                   callback(nil,[self raiseError:nil code:PGClientErrorExecute reason:@"Query is nil"]);
-                               } else {
+             callback(nil,error);
+         } else if(query2==nil) {
+             callback(nil,[self raiseError:nil code:PGClientErrorExecute reason:@"Query is nil"]);
+         } else {
 #if defined DEBUG && defined DEBUG2
-                                   NSLog(@"%@ :: %@ - query - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
+             NSLog(@"%@ :: %@ - query - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
 #endif
-                                   void (^callback_recall)(PGResult* result,NSError* error) =   ^(PGResult* result_recall ,NSError* error_recall)
-                                   {
-                                       NSLog(@" .... semaphore callback..... ");
-                                       callback(result_recall , error_recall);
-                                       NSLog(@" .... semaphore pass ..... ");
-                                       dispatch_semaphore_signal( [[self currentPoolOperation] semaphore] );
-                                       NSLog(@" .... semaphore signal end ..... ");
-                                       
-                                   };
-                                   //            dispatch_semaphore_signal(semaphore_query_send);
-                                   [self _execute:query2 values:nil whenDone: callback_recall];
-                                   
-                               }
-                           }
-                           
+             void (^callback_recall)(PGResult* result,NSError* error) =   ^(PGResult* result_recall ,NSError* error_recall)
+             {
+                 NSLog(@" .... semaphore callback..... ");
+                 callback(result_recall , error_recall);
+                 NSLog(@" .... semaphore pass ..... ");
+//                 dispatch_semaphore_signal( [[self currentPoolOperation] semaphore] );
+                 NSLog(@" .... semaphore signal end ..... ");
+                 
+             };
+             //            dispatch_semaphore_signal(semaphore_query_send);
+             [self _execute:query2 values:nil whenDone: callback_recall];
+             
+         }
+     }
+     
 #if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
-                           ]
+     ]
 #else
-                           
-                           )
+    
+    //                           )
 #endif
-     ;
-     
-     //    [self performSelector:@selector(_waitingPoolOperationForResult) withObject:self ];
-     //    [self performSelector:@selector(_waitingPoolOperationForResultMaster) withObject:self ];
-     
-     _stateOperation = PGOperationStateBusy;
-     [NSThread sleepForTimeInterval:.2];
-     NSLog(@"Is main queue? : %d", dispatch_get_current_queue() == dispatch_get_main_queue());
-     dispatch_semaphore_t semaphore_query_send = [[self currentPoolOperation] semaphore];
-     [self wait_semaphore_read: semaphore_query_send withQueue:queue_inRun];
-     
-     NSLog(@"I will see this, after dispatch_semaphore_signal is called");
+    ;
+    
+    //    [self performSelector:@selector(_waitingPoolOperationForResult) withObject:self ];
+    //    [self performSelector:@selector(_waitingPoolOperationForResultMaster) withObject:self ];
+    
+    _stateOperation = PGOperationStateBusy;
+//    [NSThread sleepForTimeInterval:.2];
+    dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+    NSLog(@"Is main queue? : %d", qu_inRun == dispatch_get_main_queue());
+    
+    
+    
+    
+    dispatch_semaphore_t semaphore_query_send = [[self currentPoolOperation] semaphore];
+    [self wait_semaphore_read: semaphore_query_send withQueue:queue_inRun];
+    
+    NSLog(@"I will see this, after dispatch_semaphore_signal is called");
 }
 -(void)wait_semaphore_read:(dispatch_semaphore_t) sem {
-         [self wait_semaphore_read:sem withQueue:nil];
-    }
+    dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+    dispatch_barrier_sync(qu_inRun, ^{
+        [self wait_semaphore_read:sem withQueue:nil];
+    });
+    
+}
 -(void)wait_semaphore_read:(dispatch_semaphore_t) sem withQueue:(dispatch_queue_t)qq_in {
-         
-        mach_port_t machTID = pthread_mach_thread_np(pthread_self());
-        const char * queued_name = [[NSString stringWithFormat:@"%@_%x  :: %s  :: %s :: %@ ", NSStringFromSelector(_cmd), machTID, dispatch_queue_get_label(dispatch_get_current_queue()), dispatch_queue_get_label(dispatch_get_main_queue()), sem ] cString];
+    
+    mach_port_t machTID = pthread_mach_thread_np(pthread_self());
+    
+    NSString *queued_name_STR =  [NSString stringWithFormat:@"%@_%x  :: %s :: %@ ", NSStringFromSelector(_cmd), machTID,
+                                  
+                                  dispatch_queue_get_label(dispatch_get_main_queue()),
+                                  sem ];
+    const char * queued_name = [queued_name_STR UTF8String];
+    
+    NSLog(@" //// Start :: %@ ", queued_name_STR);
+    
+    
+    //        dispatch_barrier_async(dispatch_get_current_queue(), ^{
+    
+    //         NSLog(@" //// Start **** :: %s ", queued_name);
+    long diispacthed = YES;
+    
+    NSTimeInterval resolutionTimeOut = 0.05;
+    NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
+    bool isRunningThreadMain = YES;
+    bool isRunningThread = YES;
+    
+    
+    
+    //         dispatch_async(((qq_in)?qq_in : dispatch_get_main_queue()), ^{
+    //
+    //             bool isRunningThreadMain = YES;
+    //             bool isRunningThread = YES;
+    //
+    //             CFRunLoopSourceSignal(_runloopsource);
+    //             CFRunLoopWakeUp(CFRunLoopGetMain());
+    //
+    //
+    //            isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
+    //             if(!isRunningThreadMain)
+    //             {
+    //                 [NSThread sleepForTimeInterval:.01];;
+    //             }
+    //
+    //             isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+    //             if(!isRunningThreadMain)
+    //             {
+    //                 [NSThread sleepForTimeInterval:.01];;
+    //             }
+    //
+    //             CFRunLoopSourceSignal(_runloopsource);
+    //             CFRunLoopWakeUp(CFRunLoopGetCurrent());
+    //
+    //
+    //             isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
+    //             if(!isRunningThread)
+    //             {
+    //                 [NSThread sleepForTimeInterval:.01];;
+    //             }
+    //
+    //             isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+    //             if(!isRunningThread)
+    //             {
+    //                 [NSThread sleepForTimeInterval:.01];;
+    //             }
+    //
+    //         });
+    
+    
+    //         if([[self currentPoolOperation] poolIdentifier] == 0)
+    while( diispacthed  && _runloopsource )
+    {
         
-        NSLog(@" //// Start :: %s ", queued_name);
         
+        bool PG_busy = PQisBusy(_connection);
+        diispacthed = dispatch_semaphore_wait(sem,5UL);
+        //             dispatch_queue_t qq_qq = dispatch_get_current_queue();
+        dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
         
-//        dispatch_barrier_async(dispatch_get_current_queue(), ^{
-        
-             NSLog(@" //// Start **** :: %s ", queued_name);
-            long diispacthed = YES;
+        //                [self performSelector:@selector(dispathCall) withObject:nil afterDelay:.1 inModes:[NSArray arrayWithObjects: kCFRunLoopCommonModes, kCFRunLoopDefaultMode, nil]];
+        if([[self currentPoolOperation] poolIdentifier] == 0)
+        {
+//            dispatch_barrier_sync(qu_inRun, ^{
+                [self performSelector:@selector(dispathCall) withObject:nil];
+//            });
+            //
+            //
+            //            [self performSelectorInBackground:@selector(dispathCall)  withObject:self];
             
-            NSTimeInterval resolutionTimeOut = 0.05;
-            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
-            bool isRunningThreadMain = YES;
-            bool isRunningThread = YES;
-         
-         
-         
-//         dispatch_async(((qq_in)?qq_in : dispatch_get_main_queue()), ^{
-//             
-//             bool isRunningThreadMain = YES;
-//             bool isRunningThread = YES;
-//             
-//             CFRunLoopSourceSignal(_runloopsource);
-//             CFRunLoopWakeUp(CFRunLoopGetMain());
-//             
-//             
-//            isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
-//             if(!isRunningThreadMain)
-//             {
-//                 [NSThread sleepForTimeInterval:.01];;
-//             }
-//             
-//             isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-//             if(!isRunningThreadMain)
-//             {
-//                 [NSThread sleepForTimeInterval:.01];;
-//             }
-//             
-//             CFRunLoopSourceSignal(_runloopsource);
-//             CFRunLoopWakeUp(CFRunLoopGetCurrent());
-//             
-//             
-//             isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
-//             if(!isRunningThread)
-//             {
-//                 [NSThread sleepForTimeInterval:.01];;
-//             }
-//             
-//             isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-//             if(!isRunningThread)
-//             {
-//                 [NSThread sleepForTimeInterval:.01];;
-//             }
-//             
-//         });
-         
-         
-//         if([[self currentPoolOperation] poolIdentifier] == 0)
-            while( diispacthed  && _runloopsource )
-            {
-                
-              
-                
-                diispacthed = dispatch_semaphore_wait(sem,DISPATCH_TIME_NOW);
-                dispatch_queue_t qq_qq = dispatch_get_current_queue();
-                
-//                [self performSelector:@selector(dispathCall) withObject:nil afterDelay:.1 inModes:[NSArray arrayWithObjects: kCFRunLoopCommonModes, kCFRunLoopDefaultMode, nil]];
-                 if([[self currentPoolOperation] poolIdentifier] == 0)
-                 {
-                     [self performSelector:@selector(dispathCall) withObject:nil];
-                 }else{
-                     [NSThread sleepForTimeInterval:.01];
-                     [self performSelector:@selector(dispathCall) withObject:nil];
-                 }
-                
-                id shared_info = (__bridge id)(_socket);
-                CFSocketCallBack shared_info_shared = (_socket->_callout);
-                const char * class_named = object_getClassName(shared_info);
-                
-                CFSocketNativeHandle sock = CFSocketGetNative(_socket);
-                
-                struct __shared_blob *shared_dd = malloc(sizeof(struct __shared_blob));
-                
-                //        NSLog(@"%s", __CFFSocketCopyDescription(_socket));
-                
-                //        shared_dd->_rdsrc = (_socket->_shared)->_rdsrc;
-                //        shared_dd->_wrsrc = (_socket->_shared)->_wrsrc;
-                //        shared_dd->_source = (_socket->_shared)->_source;
-                //        shared_dd->_socket = (_socket->_shared)->_socket;
-                //        shared_dd->_closeFD = (_socket->_shared)->_closeFD ;
-                //        shared_dd->_refCnt = (_socket->_shared)->_refCnt;
-                
-                //        objc_mem(&shared_dd, *(_socket->_shared) , sizeof(struct __shared_blob));
-                
-                unsigned int outCount, i;
-                objc_property_t *objcProperties = class_copyPropertyList([shared_info class], &outCount);
-                for (i = 0; i < outCount; i++) {
-                    objc_property_t property = objcProperties[i];
-                    const char *propName = property_getName(property);
-                    if(propName) {
-                        //                const char * propType = getPropertyType(property);
-                        NSString * propertyName = [NSString stringWithUTF8String:propName];
-                        
-                    }
-                }
-                
-                //        [((NSObject*)shared_info) shared];
-                id sockk = (__bridge id)((_socket)->_shared);
-                
-                //        typedef struct __CFSocket sockt;
-                //
-                //        dispatch_object_t disp_obj = (dispatch_object_t) ((shared_info*)->_shared->_rdsrc);
-                //        dispatch_resume( ((dispatch_object_t) disp_obj)  );;
-                if( diispacthed && !isRunningThreadMain && !isRunningThreadMain
-                   && [[self currentPoolOperation] valid]
-                   )
-                    [NSThread sleepForTimeInterval:.01];
-                
-                if( diispacthed && !isRunningThreadMain && !isRunningThreadMain
-                   && [[self currentPoolOperation] valid] && [self connectionPoolOperationCount] > 1
-                   && !PQisBusy(_connection) )
-                    break;
+            [NSThread sleepForTimeInterval:.5];
+        }else{
+            
+            //                 [self performSelectorOnMainThread:@selector(dispathCall)  withObject:self waitUntilDone:YES modes:@[NSRunLoopCommonModes, NSDefaultRunLoopMode] ];
+            //                 [self performSelectorInBackground:@selector(dispathCall)  withObject:self];
+            //                  [self performSelector:@selector(dispathCall) withObject:nil];
+//            isRunningThreadMain = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+            [self performSelector:@selector(dispathCall) withObject:nil];
+            [NSThread sleepForTimeInterval:.5];
+            if(!PG_busy)
+                break;
+            
+        }
+        
+        id shared_info = (__bridge id)(_socket);
+        CFSocketCallBack shared_info_shared = (_socket->_callout);
+        const char * class_named = object_getClassName(shared_info);
+        
+        CFSocketNativeHandle sock = CFSocketGetNative(_socket);
+        
+        struct __shared_blob *shared_dd = malloc(sizeof(struct __shared_blob));
+        
+        //        NSLog(@"%s", __CFFSocketCopyDescription(_socket));
+        
+        //        shared_dd->_rdsrc = (_socket->_shared)->_rdsrc;
+        //        shared_dd->_wrsrc = (_socket->_shared)->_wrsrc;
+        //        shared_dd->_source = (_socket->_shared)->_source;
+        //        shared_dd->_socket = (_socket->_shared)->_socket;
+        //        shared_dd->_closeFD = (_socket->_shared)->_closeFD ;
+        //        shared_dd->_refCnt = (_socket->_shared)->_refCnt;
+        
+        //        objc_mem(&shared_dd, *(_socket->_shared) , sizeof(struct __shared_blob));
+        
+        unsigned int outCount, i;
+        objc_property_t *objcProperties = class_copyPropertyList([shared_info class], &outCount);
+        for (i = 0; i < outCount; i++) {
+            objc_property_t property = objcProperties[i];
+            const char *propName = property_getName(property);
+            if(propName) {
+                //                const char * propType = getPropertyType(property);
+                NSString * propertyName = [NSString stringWithUTF8String:propName];
                 
             }
-            
-            NSLog(@" //// Clean **** :: %s ", queued_name);
-//        });
-        //         [[NSThread currentThread] cancel];
-        NSLog(@" //// END  :: %s ", queued_name);
+        }
+        
+        //        [((NSObject*)shared_info) shared];
+        id sockk = (__bridge id)((_socket)->_shared);
+        
+        //        typedef struct __CFSocket sockt;
+        //
+        //        dispatch_object_t disp_obj = (dispatch_object_t) ((shared_info*)->_shared->_rdsrc);
+        //        dispatch_resume( ((dispatch_object_t) disp_obj)  );;
+        if( diispacthed && !isRunningThreadMain && !isRunningThreadMain
+           && [[self currentPoolOperation] valid]
+           )
+            [NSThread sleepForTimeInterval:.01];
+        
+        //             if( diispacthed
+        ////                && !isRunningThreadMain && !isRunningThreadMain
+        //                && [[self currentPoolOperation] valid]
+        //                && [self connectionPoolOperationCount] > 1
+        //                && ! PG_busy )
+        //                 break;
+        
     }
-     
-     -(PGResult* )execute:(id)query error:(NSError** )error {
-         dispatch_semaphore_t s = dispatch_semaphore_create(0);
-         __block PGResult* result = nil;
-         [self execute:query whenDone:^(PGResult* r, NSError* e) {
-             if(error) {
-                 (*error) = e;
-             }
-             result = r;
-             dispatch_semaphore_signal(s);
-         }];
-         dispatch_semaphore_wait(s,DISPATCH_TIME_FOREVER);
-         return result;
-     }
-     -(void)dispathCall
-     {
-//         dispatch_async(dispatch_get_current_queue(), ^{
-         NSTimeInterval resolutionTimeOut = 0.05;
-         NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
-             bool isRunningThreadMain = YES;
-             bool isRunningThread = YES;
-             
-             while(YES || isRunningThreadMain || isRunningThread){
-             CFRunLoopSourceSignal(_runloopsource);
-             CFRunLoopWakeUp(CFRunLoopGetMain());
-             
-             
-             isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
-             if(!isRunningThreadMain)
-             {
-                 [NSThread sleepForTimeInterval:.01];;
-             }
-             
-             isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-             if(!isRunningThreadMain)
-             {
-                 [NSThread sleepForTimeInterval:.01];;
-             }
-             
-             CFRunLoopSourceSignal(_runloopsource);
-             CFRunLoopWakeUp(CFRunLoopGetCurrent());
-             
-             
-             isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
-             if(!isRunningThread)
-             {
-                 [NSThread sleepForTimeInterval:.01];;
-             }
-             
-             isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-             if(!isRunningThread)
-             {
-                 [NSThread sleepForTimeInterval:.01];;
-             }
-             }
-//     });
-     
-     }
-     -(void)_queue:(PGTransaction* )transaction index:(NSUInteger)i lastResult:(PGResult* )result lastError:(NSError* )error whenQueryDone:(void(^)(PGResult* result,BOOL isLastQuery,NSError* error)) callback {
-         if(error) {
-             // rollback
-             if([transaction transactional]) {
-                 NSString* rollbackTransaction = [(PGTransaction* )transaction quoteRollbackTransactionForConnection:self];
-                 NSParameterAssert(rollbackTransaction);
-                 [self execute:rollbackTransaction whenDone:^(PGResult* result2,NSError* error2) {
-                     callback(nil,YES,error);
-                 }];
-             } else {
-                 callback(nil,YES,error);
-             }
-         } else if(i==[transaction count]) {
-             // commit
-             if([transaction transactional]) {
-                 NSString* commitTransaction = [(PGTransaction* )transaction quoteCommitTransactionForConnection:self];
-                 NSParameterAssert(commitTransaction);
-                 [self execute:commitTransaction whenDone:^(PGResult* result2, NSError* error2) {
-                     callback(result,YES,error);
-                 }];
-             } else {
-                 callback(result,YES,error);
-             }
-         } else {
-             // execute a single query
-             [self execute:[transaction queryAtIndex:i] whenDone:^(PGResult* result,NSError* error) {
-                 if(i < [transaction count]) {
-                     [self _queue:transaction index:(i+1) lastResult:result lastError:error whenQueryDone:callback];
-                 }
-             }];
-         }
-     }
-     
-     -(void)queue:(PGTransaction* )transaction whenQueryDone:(void(^)(PGResult* result,BOOL isLastQuery,NSError* error)) callback {
-         NSParameterAssert(transaction && [transaction isKindOfClass:[PGTransaction class]]);
-         
-         // where there are no transactions to execute, raise error immediately
-         if([transaction count]==0) {
-             callback(nil,YES,[self raiseError:nil code:PGClientErrorExecute reason:@"No transactions to execute"]);
-             return;
-         }
-         
-         // check for connection status
-         if(_connection==nil || [self state] != PGConnectionStateNone) {
-             callback(nil,YES,[self raiseError:nil code:PGClientErrorState]);
-             return;
-         }
-         
-         // check for transaction status
-         PGTransactionStatusType tstatus = PQtransactionStatus(_connection);
-         if([transaction transactional] && tstatus != PQTRANS_IDLE) {
-             callback(nil,YES,[self raiseError:nil code:PGClientErrorState reason:@"Already in a transaction"]);
-             return;
-         }
-         
-         if([transaction transactional]==NO) {
-             // queue zeroth query
-             [self _queue:transaction index:0 lastResult:nil lastError:nil whenQueryDone:callback];
-         } else {
-             // queue up a start transaction, which triggers the first query
-             NSString* beginTransaction = [(PGTransaction* )transaction quoteBeginTransactionForConnection:self];
-             NSParameterAssert(beginTransaction);
-             [self execute:beginTransaction whenDone:^(PGResult* result, NSError* error) {
-                 // if the BEGIN transaction didn't work, then callback
-                 if(error) {
-                     callback(nil,YES,error);
-                 } else {
-                     // else queue up zeroth query
-                     [self _queue:transaction index:0 lastResult:result lastError:error whenQueryDone:callback];
-                 }
-             }];
-         }
-     }
-     
-     @end
-     
-     
+    
+    NSLog(@" //// Clean **** :: %s ", queued_name);
+    //        });
+    //
+    [[NSThread currentThread] cancel];
+    NSLog(@" //// END  :: %s ", queued_name);
+}
+
+-(PGResult* )execute:(id)query error:(NSError** )error {
+    dispatch_semaphore_t s = dispatch_semaphore_create(0);
+    __block PGResult* result = nil;
+    [self execute:query whenDone:^(PGResult* r, NSError* e) {
+        if(error) {
+            (*error) = e;
+        }
+        result = r;
+        dispatch_semaphore_signal(s);
+    }];
+    dispatch_semaphore_wait(s,DISPATCH_TIME_FOREVER);
+    return result;
+}
+-(void)dispathCall
+{
+    //         dispatch_async(dispatch_get_current_queue(), ^{
+    NSTimeInterval resolutionTimeOut = 0.05;
+    NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
+    bool isRunningThreadMain = YES;
+    bool isRunningThread = YES;
+    
+    while( _runloopsource && ( isRunningThreadMain || isRunningThread ) ){
+        if(_runloopsource){
+            CFRunLoopSourceSignal(_runloopsource);
+        }
+        CFRunLoopWakeUp(CFRunLoopGetMain());
+        
+        
+        
+        
+        if(_runloopsource){
+            CFRunLoopSourceSignal(_runloopsource);
+        }
+        CFRunLoopWakeUp(CFRunLoopGetCurrent());
+        
+        
+        isRunningThread = [[NSRunLoop currentRunLoop] runMode:NSRunLoopCommonModes beforeDate:theNextDate];
+        if(!isRunningThread)
+        {
+            [NSThread sleepForTimeInterval:.01];;
+        }
+        dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+        NSRunLoop *qq_loop = [NSRunLoop currentRunLoop];
+        NSRunLoop *qq_loop_main = [NSRunLoop mainRunLoop];
+        if( qq_loop != [NSRunLoop mainRunLoop]){
+            if([[self currentPoolOperation] poolIdentifier] == 0 ){
+                [qq_loop runUntilDate:theNextDate];
+            }else{
+                [self performSelectorOnMainThread:@selector(dispathCall)  withObject:self waitUntilDone:YES modes:@[NSRunLoopCommonModes, NSDefaultRunLoopMode] ];
+                NSLog(@"  END  performSelectorOnMainThread :: %@", NSStringFromSelector(_cmd));
+            }
+        }
+        if([[self currentPoolOperation] poolIdentifier] == 0  && [[self currentPoolOperation] valid]){
+//            dispatch_async(dispatch_get_main_queue(), ^{
+//                 isRunningThread = [qq_loop runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+//                if(!isRunningThread)
+//                {
+//                    bool isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+//                    if(!isRunningThreadMain){
+                        [qq_loop runUntilDate:theNextDate];
+                        [qq_loop_main  runUntilDate:theNextDate];
+                        
+                        
+                        
+//                    }
+//                }
+//            });
+            
+
+        }else if([[self currentPoolOperation] poolIdentifier] != 0 && [[self currentPoolOperation] valid]){
+            [qq_loop runUntilDate:theNextDate];
+            [qq_loop_main  runUntilDate:theNextDate];
+        }
+        [NSThread sleepForTimeInterval:.01];;
+    }
+    //     });
+    
+}
+-(void)_queue:(PGTransaction* )transaction index:(NSUInteger)i lastResult:(PGResult* )result lastError:(NSError* )error whenQueryDone:(void(^)(PGResult* result,BOOL isLastQuery,NSError* error)) callback {
+    if(error) {
+        // rollback
+        if([transaction transactional]) {
+            NSString* rollbackTransaction = [(PGTransaction* )transaction quoteRollbackTransactionForConnection:self];
+            NSParameterAssert(rollbackTransaction);
+            [self execute:rollbackTransaction whenDone:^(PGResult* result2,NSError* error2) {
+                callback(nil,YES,error);
+            }];
+        } else {
+            callback(nil,YES,error);
+        }
+    } else if(i==[transaction count]) {
+        // commit
+        if([transaction transactional]) {
+            NSString* commitTransaction = [(PGTransaction* )transaction quoteCommitTransactionForConnection:self];
+            NSParameterAssert(commitTransaction);
+            [self execute:commitTransaction whenDone:^(PGResult* result2, NSError* error2) {
+                callback(result,YES,error);
+            }];
+        } else {
+            callback(result,YES,error);
+        }
+    } else {
+        // execute a single query
+        [self execute:[transaction queryAtIndex:i] whenDone:^(PGResult* result,NSError* error) {
+            if(i < [transaction count]) {
+                [self _queue:transaction index:(i+1) lastResult:result lastError:error whenQueryDone:callback];
+            }
+        }];
+    }
+}
+
+-(void)queue:(PGTransaction* )transaction whenQueryDone:(void(^)(PGResult* result,BOOL isLastQuery,NSError* error)) callback {
+    NSParameterAssert(transaction && [transaction isKindOfClass:[PGTransaction class]]);
+    
+    // where there are no transactions to execute, raise error immediately
+    if([transaction count]==0) {
+        callback(nil,YES,[self raiseError:nil code:PGClientErrorExecute reason:@"No transactions to execute"]);
+        return;
+    }
+    
+    // check for connection status
+    if(_connection==nil || [self state] != PGConnectionStateNone) {
+        callback(nil,YES,[self raiseError:nil code:PGClientErrorState]);
+        return;
+    }
+    
+    // check for transaction status
+    PGTransactionStatusType transac_status = PQtransactionStatus(_connection);
+    if([transaction transactional] && transac_status != PQTRANS_IDLE) {
+        callback(nil,YES,[self raiseError:nil code:PGClientErrorState reason:@"Already in a transaction"]);
+        return;
+    }
+    
+    if([transaction transactional]==NO) {
+        // queue zeroth query
+        [self _queue:transaction index:0 lastResult:nil lastError:nil whenQueryDone:callback];
+    } else {
+        // queue up a start transaction, which triggers the first query
+        NSString* beginTransaction = [(PGTransaction* )transaction quoteBeginTransactionForConnection:self];
+        NSParameterAssert(beginTransaction);
+        [self execute:beginTransaction whenDone:^(PGResult* result, NSError* error) {
+            // if the BEGIN transaction didn't work, then callback
+            if(error) {
+                callback(nil,YES,error);
+            } else {
+                // else queue up zeroth query
+                [self _queue:transaction index:0 lastResult:result lastError:error whenQueryDone:callback];
+            }
+        }];
+    }
+}
+
+@end
+
+

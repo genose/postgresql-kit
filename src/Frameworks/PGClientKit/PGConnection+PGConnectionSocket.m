@@ -300,8 +300,9 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     CFSocketSetSocketFlags(_socket,~kCFSocketCloseOnInvalidate & CFSocketGetSocketFlags(_socket));
     //    CFSocketEnableCallBacks(_socket, kCFSocketDataCallBack | kCFSocketReadCallBack | kCFSocketWriteCallBack);
     
+    dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
     
-    dispatch_source_t dsrc = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,  dispatch_get_current_queue() );
+    dispatch_source_t dsrc = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,  qu_inRun );
     
     dispatch_source_set_timer(dsrc, dispatch_time(DISPATCH_TIME_NOW, 0), NSEC_PER_SEC / 2, NSEC_PER_SEC);
     
@@ -311,15 +312,15 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     [self _updateStatus];
     
     // add to run loop to begin polling
-    _runloopsource = CFSocketCreateRunLoopSource(NULL,_socket,128);
+    _runloopsource = CFSocketCreateRunLoopSource(NULL,_socket,1);
     NSParameterAssert(_runloopsource && CFRunLoopSourceIsValid(_runloopsource));
     CFRunLoopAddSource(
                        //                       CFRunLoopGetMain(),
-                       CFRunLoopGetCurrent(),
+                       CFRunLoopGetCurrent(), // One connection PER Thread
                        _runloopsource,(CFStringRef)kCFRunLoopCommonModes);
     
     dispatch_semaphore_t semaphore_query_send = [[self masterPoolOperation] semaphore];
-    [self dispathCall];
+//    [self dispathCall];
 #if defined DEBUG && defined DEBUG2
     NSLog(@"%@ :: %@ :::: Socket created ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif

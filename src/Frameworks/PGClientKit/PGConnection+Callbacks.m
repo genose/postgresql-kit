@@ -42,7 +42,10 @@ void _socketCallback(CFSocketRef s, CFSocketCallBackType callBackType,CFDataRef 
 #endif
     PGConnection* connection = (PGConnection* ) ((__bridge PGConnection* )__self);
 //    PGConnection* connection_cp = [  connection copy];
-	[((PGConnection* )connection) _socketCallback:callBackType];
+	dispatch_async(dispatch_get_main_queue(), ^{
+      [((PGConnection* )connection) _socketCallback:callBackType];
+    });
+    
 #if defined DEBUG && defined DEBUG2
     NSLog(@"%@ :: %s :::: Socket CALL END .... (%lu) ", NSStringFromClass([((__bridge NSObject *)__self) class]),  (__FUNCTION__), callBackType);
 #endif
@@ -99,8 +102,11 @@ void _noticeProcessor(void* arg,const char* cString) {
 -(void)_socketCallbackConnectEndedWithStatus:(PostgresPollingStatusType)pqstatus {
 //::	NSParameterAssert(_callback!=nil);
 //::	void (^callback)(BOOL usedPassword,NSError* error) = (__bridge void (^)(BOOL,NSError* ))(_callback);
-    if( ![((PGConnectionOperation*)[self currentPoolOperation]) valid] || [[self currentPoolOperation] poolIdentifier] != 0)
+    if( ![((PGConnectionOperation*)[self currentPoolOperation]) valid]
+       || [[self currentPoolOperation] poolIdentifier] != 0)
         return;
+    
+     pqstatus = PQconnectPoll(_connection);
     
      _callbackOperation =  [((PGConnectionOperation*)[self currentPoolOperation]) getCallback];
     void (^callback)(BOOL usedPassword,NSError* error ) = (__bridge void (^)( BOOL,NSError*  ))( _callbackOperation );
@@ -120,7 +126,7 @@ void _noticeProcessor(void* arg,const char* cString) {
 		// set up notice processor, set success condition
 		PQsetNoticeProcessor(_connection,_noticeProcessor,(__bridge void *)(self));
         if([[self currentPoolOperation] poolIdentifier] == 0){
-        dispatch_semaphore_t ss = dispatch_semaphore_create(0);
+            dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
         
         mach_port_t machTID = pthread_mach_thread_np(pthread_self());
         
@@ -129,7 +135,7 @@ void _noticeProcessor(void* arg,const char* cString) {
         NSLog(@" //// %s ", queued_name);
         
         dispatch_queue_t queue_inRun = dispatch_queue_create(queued_name, DISPATCH_QUEUE_CONCURRENT);
-        
+        queue_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
         
         
 #if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
@@ -138,12 +144,12 @@ void _noticeProcessor(void* arg,const char* cString) {
          
           [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
 
-         dispatch_barrier_sync(queue_inRun,^
+         dispatch_async(queue_inRun,^
 #endif
         {
            
             callback(usedPassword ? YES : NO,nil);
-//             dispatch_semaphore_signal(ss);
+             dispatch_semaphore_signal(ss);
             
         }
 #if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
@@ -157,7 +163,7 @@ void _noticeProcessor(void* arg,const char* cString) {
 //         [self wait_semaphore_read:ss];
          [self wait_semaphore_read: ss withQueue:queue_inRun];
 //
-         [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
+         [((PGConnectionOperation*)[self masterPoolOperation]) validate];
          }
 //         dispatch_destroy(queue);
 	} else if(needsPassword) {
@@ -209,7 +215,7 @@ void _noticeProcessor(void* arg,const char* cString) {
     PGConnectionOperation* currentpoolOpe = [self currentPoolOperation];
     if(_connection==nil
        || ![[self currentPoolOperation] valid]
-//       || ( [currentpoolOpe poolIdentifier]) !=0
+       || ( [currentpoolOpe poolIdentifier]) !=0
        ) { // || (_callback==nil) // && _callbackOperation == nil)
 		return;
 	}
@@ -223,8 +229,15 @@ void _noticeProcessor(void* arg,const char* cString) {
 			break;
 		case PGRES_POLLING_OK:
 		case PGRES_POLLING_FAILED:
+            if(( [currentpoolOpe poolIdentifier]) ==0 && [currentpoolOpe valid] )
+            {
 			// finished connecting
-			[self _socketCallbackConnectEndedWithStatus:pqstatus];
+//             [self performSelectorInBackground:@selector(_socketCallbackConnectEndedWithStatus:)  withObject:nil];
+//            [self performSelector:@selector(_socketCallbackConnect) withObject:nil afterDelay:0.1];
+            
+                    [self performSelector:@selector(_socketCallbackConnectEndedWithStatus:) withObject:nil];
+            }
+//			[self _socketCallbackConnectEndedWithStatus:pqstatus];
 			break;
 		default:
 			break;
@@ -331,11 +344,11 @@ void _noticeProcessor(void* arg,const char* cString) {
 #if defined DEBUG && defined DEBUG2
             NSLog(@"PGConnectionStateQuery(%@::%p) - Read - Result - Done :: callback \n ********************************* \nresult :: (%@)\n ********************************* \nerror :: (%@) \n_callback :: (%@)\n ********************************* ",NSStringFromClass([self class]), self, r, error, callback  );
 #endif
+            // queue up callback on nearest thread
             
-            
+            dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
 			
-			// queue up callback on nearest thread
-			dispatch_async(dispatch_get_current_queue(),^{
+			dispatch_async( qu_inRun ,^{
 #if defined DEBUG && defined DEBUG2
                 NSLog(@"PGConnectionStateQuery - Read - callback %p ",callback);
 #endif
