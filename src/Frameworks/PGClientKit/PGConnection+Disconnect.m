@@ -18,14 +18,19 @@
 @implementation PGConnection (Disconnect)
 
 -(void)disconnect {
-	[self _cancelDestroy];
-	[self _socketDisconnect];
-	if(_connection) {
-		PQfinish(_connection);
-        _connection = nil;
-		_parameters = nil;
-	}
-	[self _updateStatus];
+    @synchronized (self) {
+        [self _cancelDestroy];
+        [self _socketDisconnect];
+        if(_connection != NULL) {
+            
+            
+            PQfinish(_connection);
+            _connection = nil;
+            _parameters = nil;
+            
+        }
+    }
+    [self _updateStatus];
 }
 
 @end
