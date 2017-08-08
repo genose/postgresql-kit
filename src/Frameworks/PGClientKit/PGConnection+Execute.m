@@ -90,13 +90,13 @@
     int returnCode = PQsendQueryParams(_connection,[query UTF8String],(int)params->size,params->types,(const char** )params->values,params->lengths,params->formats,resultFormat);
     _paramFree(params);
     if(!returnCode) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"%@ :: %@ :: - execute - ERROR :: callback %p :: While EXECUTE (%@)", NSStringFromSelector(_cmd),NSStringFromClass([self class]), callback, query);
 #endif
         callback(nil,[self raiseError:nil code:PGClientErrorExecute reason:[NSString stringWithUTF8String:PQerrorMessage(_connection)]]);
         return;
     }else{
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"%@ :: %@ :: - execute - PASSED :: callback %p :: While EXECUTE (%@)", NSStringFromSelector(_cmd),NSStringFromClass([self class]), callback, query);
 #endif
     }
@@ -111,7 +111,7 @@
     [self addOperation:query withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
     
     
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@"%@ :: %@ :: - execute - RETURN :: callback %p :: %p ", NSStringFromSelector(_cmd),NSStringFromClass([self class]), callback, _callbackOperation);
 #endif
     
@@ -134,9 +134,9 @@
     //    mach_port_t machTID = pthread_mach_thread_np(pthread_self());
     NSString * queued_name_STR = [NSString stringWithFormat:@"%s_%ld :: %@", "query_operation_dispacthed_threads", (long)[self connectionPoolOperationCount], [NSThread currentThread] ];
     const char * queued_name = [queued_name_STR UTF8String];
-    
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" //// -_-_-_-_ Query Dispatch START  -_-_-_-_- :: %@ ", queued_name_STR);
-    
+#endif
     dispatch_queue_t queue_inRun = dispatch_queue_create(queued_name, DISPATCH_QUEUE_CONCURRENT);
     
     NSString* query2 = nil;
@@ -147,25 +147,25 @@
         query2 = [(PGQuery* )query quoteForConnection:self error:&error];
     }
     if(error) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"%@ :: %@ - query ERROR - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
 #endif
         callback(nil,error);
     } else if(query2==nil) {
         callback(nil,[self raiseError:nil code:PGClientErrorExecute reason:@"Query is nil"]);
     } else {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"%@ :: %@ - query - callback %p :: \n query :: %@ :::::",NSStringFromClass([self class]), NSStringFromSelector(_cmd), callback, query2);
 #endif
         void (^callback_recall)(PGResult* result,NSError* error) =   ^(PGResult* result_recall ,NSError* error_recall)
         {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" .... semaphore callback..... %@", [[self currentPoolOperation] semaphore]);
 #endif
             
             callback(result_recall , error_recall);
             
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" .... semaphore pass ..... ");
             //                 dispatch_semaphore_signal( [[self currentPoolOperation] semaphore] );
             NSLog(@" .... semaphore signal end ..... %@", [[self currentPoolOperation] semaphore]);
@@ -185,7 +185,7 @@
     
     dispatch_semaphore_t semaphore_query_send = [[self currentPoolOperation] semaphore];
     [self wait_semaphore_read: semaphore_query_send withQueue:queue_inRun];
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" -_-_-_-_ Query END  -_-_-_-_-  :: %@ ", queued_name_STR);
 #endif
     _stateOperation = PGOperationStateNone;
@@ -291,13 +291,13 @@
     
     if( qq_loop != [NSRunLoop mainRunLoop]){
         
-    dispatch_barrier_sync(qu_inRun, ^{
-        [self wait_semaphore_read:sem withQueue:nil];
-    });
-    }else{
-//        dispatch_barrier_async(qu_inRun, ^{
+        dispatch_barrier_sync(qu_inRun, ^{
             [self wait_semaphore_read:sem withQueue:nil];
-//        });
+        });
+    }else{
+        //        dispatch_barrier_async(qu_inRun, ^{
+        [self wait_semaphore_read:sem withQueue:nil];
+        //        });
     }
     
 }
@@ -310,7 +310,7 @@
                                   sem ];
     
     //    const char * queued_name = [queued_name_STR UTF8String];
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" //// Start :: %@ ", queued_name_STR);
 #endif
     //         NSLog(@" //// Start **** :: %s ", queued_name);
@@ -331,7 +331,7 @@
         diispacthed = dispatch_semaphore_wait(sem,DISPATCH_TIME_NOW);
         
         if( nil == [[self currentPoolOperation] getCallback] || !diispacthed){
-                        [NSThread sleepForTimeInterval:.01];
+            [NSThread sleepForTimeInterval:.01];
             break;
         }
         
@@ -340,12 +340,12 @@
         
         if([[self currentPoolOperation] valid] )
         {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" //// STEP :: %@ ", queued_name_STR);
 #endif
             [self performSelector:@selector(dispathCall) withObject:nil];
         }else{
-                            break;
+            break;
         }
         
         if( diispacthed && ![[self currentPoolOperation] valid] )
@@ -358,15 +358,15 @@
         //                && ! PG_busy )
         //                 break;
         
-          PGConnectionStatus con_status = [((PGConnection*)self) status];
+        PGConnectionStatus con_status = [((PGConnection*)self) status];
         if(  con_status == PGConnectionStatusDisconnected || ! _connection)
             break;
     }
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" //// Clean **** :: %@ ", queued_name_STR);
 #endif
     [[NSThread currentThread] cancel];
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" //// END  :: %@ ", queued_name_STR);
 #endif
     
@@ -383,12 +383,12 @@
     [NSThread sleepForTimeInterval:.01];;
     PGConnectionStatus con_status = [((PGConnection*)self) status];
     if(
-        (
-         con_status != PGConnectionStatusBusy &&
-         con_status != PGConnectionStatusConnected &&
-         con_status != PGConnectionStatusConnecting
-         
-         )
+       (
+        con_status != PGConnectionStatusBusy &&
+        con_status != PGConnectionStatusConnected &&
+        con_status != PGConnectionStatusConnecting
+        
+        )
        || ! _connection || !_socket)
         return;
     
@@ -424,26 +424,26 @@
                 [qq_loop runUntilDate:theNextDate];
                 if(!isRunningThread){
                     [qq_loop_main  runUntilDate:theNextDate];
-                      [NSThread sleepForTimeInterval:.1];;
+                    [NSThread sleepForTimeInterval:.1];;
                 }
-
-//                [qq_loop_main runUntilDate:theNextDate];
-//
-//                isRunningThread = [qq_loop_main runMode:NSRunLoopCommonModes beforeDate:theNextDate];
-//                if(!isRunningThread)
-//                {
-//                    [NSThread sleepForTimeInterval:.1];;
-//                     [self performSelectorOnMainThread:@selector(dispathCall)  withObject:self waitUntilDone:YES modes:@[NSRunLoopCommonModes, NSDefaultRunLoopMode] ];
-//                }
-//                
+                
+                //                [qq_loop_main runUntilDate:theNextDate];
+                //
+                //                isRunningThread = [qq_loop_main runMode:NSRunLoopCommonModes beforeDate:theNextDate];
+                //                if(!isRunningThread)
+                //                {
+                //                    [NSThread sleepForTimeInterval:.1];;
+                //                     [self performSelectorOnMainThread:@selector(dispathCall)  withObject:self waitUntilDone:YES modes:@[NSRunLoopCommonModes, NSDefaultRunLoopMode] ];
+                //                }
+                //
             }else{
-
+                
                 {
                     [qq_loop_main  runUntilDate:theNextDate];
-                     [qq_loop runUntilDate:theNextDate];
+                    [qq_loop runUntilDate:theNextDate];
                     
                 }
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                 NSLog(@"  END  performSelectorOnMainThread :: %@", NSStringFromSelector(_cmd));
 #endif
                 return; // don t care

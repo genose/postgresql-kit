@@ -253,7 +253,7 @@ NSString* PGConnectionHostKey = @"Host";
 }
 
 -(void)_updateStatus {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
 				NSLog(@"PGConnection (%p) - _updateStatus ",self);
 #endif
     static PGConnectionStatus oldStatus = PGConnectionStatusDisconnected;
@@ -278,7 +278,8 @@ NSString* PGConnectionHostKey = @"Host";
     // from continuing
     NSNumber* key = [NSNumber numberWithInt:oldStatus];
     NSString* description = [PGConnectionStatusDescription objectForKey:key];
-    [self performSelectorOnMainThread:@selector(_updateStatusDelayed:) withObject:@[ key,description ] waitUntilDone:NO];
+//    [self performSelectorOnMainThread:@selector(_updateStatusDelayed:) withObject:@[ key,description ] waitUntilDone:NO];
+    [self performSelector:@selector(_updateStatusDelayed:) withObject:@[ key,description ] ];
 #ifdef DEBUG2
     NSLog(@"status => %@ %@",key,description);
 #endif
@@ -316,7 +317,7 @@ NSString* PGConnectionHostKey = @"Host";
     }else{
         NSLog(@" ERROR :: NO master pool .... ");
     }
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     //    NSLog(@" %@::%@ :: FETCH cureent pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, masterPoolOperation);
 #endif
     
@@ -335,7 +336,7 @@ NSString* PGConnectionHostKey = @"Host";
     }else{
         NSLog(@" ERROR :: NO pool .... ");
     }
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
 //    NSLog(@" %@::%@ :: FETCH cureent pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, masterPoolOperation);
 #endif
    
@@ -356,7 +357,7 @@ NSString* PGConnectionHostKey = @"Host";
         NSLog(@" ERROR :: NO PREV pool .... ");
         return [self currentPoolOperation];
     }
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     //    NSLog(@" %@::%@ :: FETCH prev pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, masterPoolOperation);
 #endif
     
@@ -380,7 +381,7 @@ NSString* PGConnectionHostKey = @"Host";
     
     indexInPool = CFArrayGetCount(_callbackOperationPool);
     id obj = CFArrayGetValueAtIndex(_callbackOperationPool, indexInPool-1);
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" %@::%@ :: ADDED pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, [obj description]);
 #endif
     
@@ -396,7 +397,7 @@ NSString* PGConnectionHostKey = @"Host";
             dispatch_semaphore_signal( [obj semaphore] );
         [obj finish];
         
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@" %@::%@ :: REMOVED pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, [obj description]);
 #endif
         CFArrayRemoveValueAtIndex(_callbackOperationPool, operationRefIndex);

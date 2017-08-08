@@ -69,7 +69,7 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
 	NSParameterAssert(error);
 	// perform selector
 	if([[self delegate] respondsToSelector:@selector(connection:error:)]) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"PGConnectionStateQuery - _raiseError :: send to delegate connection:error:" );
 #endif
 //		[[self delegate] connection:self error:error];
@@ -79,13 +79,13 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
 //         dispatch_barrier_sync(qu_inRun, ^ {
             	[[self delegate] connection:self error:error];
 //            [NSThread detachNewThreadSelector:@selector(connection:error:) toTarget:[self delegate] withObject:@{@"connection":self, @"error":error} ];
-    #if defined DEBUG && defined DEBUG2
+    #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
      NSLog(@"PGConnectionStateQuery - _raiseError :: send to delegate connection:error: END" );
 #endif
 //} );
         
         }else{
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"PGConnectionStateQuery - _raiseError :: no delegate respondsto connection:error:" );
 #endif
     }
@@ -107,7 +107,7 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
 	}
 	// raise the error with the delegate
 	if([self delegate]) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"PGConnectionStateQuery - _raiseError :: performSelectorOnMainThread :: (%@)", theError );
 #endif
         
@@ -116,11 +116,11 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
         
         [self _raiseError:theError];
     }else{
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"PGConnectionStateQuery - _raiseError:code: :: no delegate avail" );
 #endif
     }
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@"PGConnectionStateQuery - _raiseError :: return " );
 #endif
 	return theError;

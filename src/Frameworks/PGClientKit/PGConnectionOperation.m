@@ -77,7 +77,9 @@
 }
 -(void)invalidate
 {
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" %@::%@ :: INVALIDATE pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), _poolRefIdentifier, [self description]);
+#endif
     if(_poolRefIdentifier !=0){
             [_operationConnectionClassRef invalidateOperation: _poolRefIdentifier];
         [self finish];
@@ -89,7 +91,9 @@
 
 -(void)validate
 {
+    #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" %@::%@ :: REACTIVATE pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), _poolRefIdentifier, [self description]);
+#endif
     if(_poolRefIdentifier !=0)
         [_operationConnectionClassRef invalidateOperation: _poolRefIdentifier];
     _invalidated = NO;

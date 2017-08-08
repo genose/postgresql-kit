@@ -321,7 +321,7 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     
     dispatch_semaphore_t semaphore_query_send = [[self masterPoolOperation] semaphore];
 //    [self dispathCall];
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@"%@ :: %@ :::: Socket created ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
     
@@ -330,7 +330,7 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     
     [[NSThread currentThread] cancel];
     //    CFRunLoopRun();//(kCFRunLoopDefaultMode, 0.2 , NO);
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" ------- %@ :: %@ :::: Socket Runloop ENDED CLEAR ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
 }

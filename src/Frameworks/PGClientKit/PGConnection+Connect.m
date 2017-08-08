@@ -168,7 +168,7 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 //             dispatch_async(dispatch_get_current_queue(),^
 #endif
         {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" ------- %@ :: %@ :::: Connection Started ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
             [self _socketConnect:PGConnectionStateConnect];
@@ -176,7 +176,7 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 //    [self performSelector:@selector(_waitingPoolOperationForResult) withObject:self ];
 //    [self performSelector:@selector(_waitingPoolOperationForResultMaster) withObject:self ];
 
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" ------- %@ :: %@ :::: Connection STOPPed ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
             

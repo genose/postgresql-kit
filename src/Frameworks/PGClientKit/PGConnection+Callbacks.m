@@ -38,30 +38,30 @@
  */
 static int socketUsed_in = 0;
 void _socketCallback(CFSocketRef s, CFSocketCallBackType callBackType,CFDataRef address,const void* data,void* __self) {
-
+    
     
     
     [NSThread sleepForTimeInterval:.01];;
-  
+    
     PGConnection* connection = (PGConnection* ) ((__bridge PGConnection* )__self);
     if(! connection
-//       || socketUsed_in > 20
+       //       || socketUsed_in > 20
        )
         return ;
     socketUsed_in ++;
-//    dispatch_barrier_async(dispatch_get_main_queue(), ^{
-#if defined DEBUG && defined DEBUG2
-        NSLog(@"%@ :: %s :::: Socket CALL ... %lu ", NSStringFromClass([((__bridge NSObject *)__self) class]),  (__FUNCTION__), callBackType);
+    //    dispatch_barrier_async(dispatch_get_main_queue(), ^{
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
+    NSLog(@"%@ :: %s :::: Socket CALL ... %lu ", NSStringFromClass([((__bridge NSObject *)__self) class]),  (__FUNCTION__), callBackType);
 #endif
-        [((PGConnection* )connection) _socketCallback:callBackType];
-#if defined DEBUG && defined DEBUG2
-        NSLog(@"%@ :: %s :::: Socket CALL END .... (%lu) ", NSStringFromClass([((__bridge NSObject *)__self) class]),  (__FUNCTION__), callBackType);
+    [((PGConnection* )connection) _socketCallback:callBackType];
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
+    NSLog(@"%@ :: %s :::: Socket CALL END .... (%lu) ", NSStringFromClass([((__bridge NSObject *)__self) class]),  (__FUNCTION__), callBackType);
 #endif
-        socketUsed_in = 0;
-//    });
+    socketUsed_in = 0;
+    //    });
     
-//    [NSThread sleepForTimeInterval:.1];;
-
+    //    [NSThread sleepForTimeInterval:.1];;
+    
 }
 
 /**
@@ -91,7 +91,7 @@ void _noticeProcessor(void* arg,const char* cString) {
         // consume input
         PQconsumeInput(_connection);
         
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"PGConnectionStateQuery - Read - _socketCallbackNotification ::  loop ");
 #endif
         
@@ -99,7 +99,7 @@ void _noticeProcessor(void* arg,const char* cString) {
         PGnotify* notify = nil;
         while((notify = PQnotifies(_connection)) != nil) {
             if([[self delegate] respondsToSelector:@selector(connection:notificationOnChannel:payload:)]) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                 NSLog(@"PGConnectionStateQuery - Read - _socketCallbackNotification ::  call delegate (%@) (%@)", [self delegate], NSStringFromSelector(@selector(connection:notificationOnChannel:payload:)));
 #endif
                 
@@ -109,7 +109,7 @@ void _noticeProcessor(void* arg,const char* cString) {
             }
             PQfreemem(notify);
         }
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"PGConnectionStateQuery - Read - _socketCallbackNotification ::  free ");
 #endif
     }
@@ -135,7 +135,7 @@ void _noticeProcessor(void* arg,const char* cString) {
     
     BOOL needsPassword = PQconnectionNeedsPassword(_connection) ? YES : NO;
     BOOL usedPassword = PQconnectionUsedPassword(_connection) ? YES : NO;
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
 				NSLog(@"%@ (%p) :: BEGIN :: - Read::BEGIN - %@ ::  free (callback %p)", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), callback);
 #endif
     // update the status
@@ -153,9 +153,9 @@ void _noticeProcessor(void* arg,const char* cString) {
             mach_port_t machTID = pthread_mach_thread_np(pthread_self());
             
             const char * queued_name = [[NSString stringWithFormat:@"%s_%x_%@", "operation_dispacthed_threads", machTID, NSStringFromSelector(_cmd) ] cString];
-            
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" //// %s ", queued_name);
-            
+#endif
             dispatch_queue_t queue_inRun = dispatch_queue_create(queued_name, DISPATCH_QUEUE_CONCURRENT);
             queue_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
             
@@ -199,7 +199,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                  callback(YES,[self raiseError:nil code:PGClientErrorRejected]);
              }
              
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
              NSLog(@"%@ (%p) :: END :: - Read::END - %@ ::  free (callback %p)", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), callback);
 #endif
              // :: TODO  ::
@@ -226,11 +226,11 @@ void _noticeProcessor(void* arg,const char* cString) {
                  [self _updateStatus]; // this also calls disconnect when rejected
              }
              
-            /**
-             *  The connect callback will continue to poll the connection for new data. When
-             *  the poll status is either OK or FAILED, the application's callback block is
-             *  run.
-             */
+             /**
+              *  The connect callback will continue to poll the connection for new data. When
+              *  the poll status is either OK or FAILED, the application's callback block is
+              *  run.
+              */
              -(void)_socketCallbackConnect {
                  // ignore this call if either connection or callback are nil
                  
@@ -258,7 +258,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                              //             [self performSelectorInBackground:@selector(_socketCallbackConnectEndedWithStatus:)  withObject:nil];
                              [self performSelector:@selector(_socketCallbackConnectEndedWithStatus:) withObject:nil afterDelay:0.1];
                              
-//                             [self performSelector:@selector(_socketCallbackConnectEndedWithStatus:) withObject:nil];
+                             //                             [self performSelector:@selector(_socketCallbackConnectEndedWithStatus:) withObject:nil];
                          }
                          //			[self _socketCallbackConnectEndedWithStatus:pqstatus];
                          break;
@@ -267,10 +267,10 @@ void _noticeProcessor(void* arg,const char* cString) {
                  }
              }
              
-            /**
-             *  The reset callback is very similar to the connect callback, and could probably
-             *  be merged with that one.
-             */
+             /**
+              *  The reset callback is very similar to the connect callback, and could probably
+              *  be merged with that one.
+              */
              -(void)_socketCallbackReset {
                  NSParameterAssert(_connection);
                  
@@ -291,10 +291,10 @@ void _noticeProcessor(void* arg,const char* cString) {
                  }
              }
              
-            /**
-             *  In the case of a query being processed, this method will consume any input
-             *  then any results from the server
-             */
+             /**
+              *  In the case of a query being processed, this method will consume any input
+              *  then any results from the server
+              */
              -(void)_socketCallbackQueryRead {
                  NSParameterAssert(_connection);
                  
@@ -316,7 +316,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                  
                  void (^callback)(PGResult* result,NSError* error) = (__bridge void (^)(PGResult* ,NSError* ))( [((PGConnectionOperation*)[self currentPoolOperation]) getCallback] );
                  
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                  NSLog(@":::: PGConnectionStateQuery(%@::%p) - Read BEGIN - Result - :: callback  \n_callback :: (%@)\n ********************************* ",NSStringFromClass([self class]), self  , callback  );
 #endif
                  
@@ -326,7 +326,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                  while(1) {
                      result = PQgetResult(_connection);
                      if(result==nil) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                          NSLog(@"PGConnectionStateQuery - Read - Result nil - End");
 #endif
                          break;
@@ -337,34 +337,34 @@ void _noticeProcessor(void* arg,const char* cString) {
                      
                      // check for connection errors
                      if(PQresultStatus(result)==PGRES_EMPTY_QUERY) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                          NSLog(@"PGConnectionStateQuery - Read - Result - Empty Query");
 #endif
                          // callback empty query
                          error = [self raiseError:nil code:PGClientErrorQuery reason:@"Empty query"];
                          PQclear(result);
                      } else if(PQresultStatus(result)==PGRES_BAD_RESPONSE || PQresultStatus(result)==PGRES_FATAL_ERROR) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                          NSLog(@"PGConnectionStateQuery - Read - Result - Client Error (%s)", PQresultErrorMessage(result));
 #endif
                          error = [self raiseError:nil code:PGClientErrorExecute reason:[NSString stringWithUTF8String:PQresultErrorMessage(result)]];
                          PQclear(result);
                      } else {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                          NSLog(@"PGConnectionStateQuery - Read - Result - READ Query RESULT (%@)",[currentPoolOperation queryString] );
 #endif
                          // TODO: allocate a different kind of class
                          r = [[PGResult alloc] initWithResult:result format:[self tupleFormat]];
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                          NSLog(@"PGConnectionStateQuery - Read - Result - READ END (%s)", PQresultErrorMessage(result));
 #endif
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                          NSLog(@"PGConnectionStateQuery - Read - Result - Done :: (%@)", r );
 #endif
                      }
                      if(r || error) {
                          
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                          NSLog(@"PGConnectionStateQuery(%@::%p) - Read - Result - Done :: callback \n ********************************* \nresult :: (%@)\n ********************************* \nerror :: (%@) \n_callback :: (%@)\n ********************************* ",NSStringFromClass([self class]), self, r, error, callback  );
 #endif
                          // queue up callback on nearest thread
@@ -372,7 +372,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                          dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
                          
                          dispatch_async( qu_inRun ,^{
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                              NSLog(@"PGConnectionStateQuery - Read - callback %p ",callback);
 #endif
                              
@@ -384,7 +384,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                          break;
                      }
                  }
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                  NSLog(@"PGConnectionStateQuery - Read - Result - Clear " );
 #endif
                  // all results consumed - update state
@@ -395,16 +395,16 @@ void _noticeProcessor(void* arg,const char* cString) {
                  //    [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
                  
                  [self _updateStatus];
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                  NSLog(@"PGConnectionStateQuery - Read END - Result - Clear::End " );
 #endif
                  _stateOperation = PGOperationStateNone;
              }
              
-            /**
-             *  In the case of a query being processed, this method will consume any input
-             *  flush the connection and consume any results which are being processed.
-             */
+             /**
+              *  In the case of a query being processed, this method will consume any input
+              *  flush the connection and consume any results which are being processed.
+              */
              -(void)_socketCallbackQueryWrite {
                  NSParameterAssert(_connection);
                  // flush
@@ -419,14 +419,14 @@ void _noticeProcessor(void* arg,const char* cString) {
                  }
              }
              
-            /**
-             *  This method is called from _socketCallback and depending on the
-             *  current state of the connection, it will call the connect, reset, query
-             *  or notification socket callback
-             */
+             /**
+              *  This method is called from _socketCallback and depending on the
+              *  current state of the connection, it will call the connect, reset, query
+              *  or notification socket callback
+              */
              -(void)_socketCallback:(CFSocketCallBackType)callBackType {
                  @try{
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                      switch(callBackType) {
                          case kCFSocketReadCallBack:
                              NSLog(@"kCFSocketReadCallBack");
@@ -451,37 +451,37 @@ void _noticeProcessor(void* arg,const char* cString) {
                      PGConnectionState state_on = [self state];
                      switch(state_on) {
                          case PGConnectionStateConnect:
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                              NSLog(@"PGConnectionStateConnect");
 #endif
                              [self _socketCallbackConnect];
                              break;
                          case PGConnectionStateReset:
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                              NSLog(@"PGConnectionStateReset");
 #endif
                              [self _socketCallbackReset];
                              break;
                          case PGConnectionStateQuery:
                              if(callBackType==kCFSocketReadCallBack) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                                  NSLog(@"PGConnectionStateQuery - Read - _socketCallback :: _socketCallbackQueryRead :: callback (%p)",[[self currentPoolOperation] getCallback]);
 #endif
                                  [self _socketCallbackQueryRead];
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                                  NSLog(@"PGConnectionStateQuery - Read - _socketCallback :: _socketCallbackNotification :: callback (%p)", [[self currentPoolOperation] getCallback]);
 #endif
                                  [self _socketCallbackNotification];
                                  
                              } else if(callBackType==kCFSocketWriteCallBack) {
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                                  NSLog(@"PGConnectionStateQuery - Write");
 #endif
                                  [self _socketCallbackQueryWrite];
                              }
                              break;
                          default:
-#if defined DEBUG && defined DEBUG2
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                              NSLog(@"PGConnectionStateOther");
 #endif
                              [self _socketCallbackNotification];
