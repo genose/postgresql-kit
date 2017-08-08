@@ -394,6 +394,7 @@ NSString* PGConnectionHostKey = @"Host";
         id obj = CFArrayGetValueAtIndex(_callbackOperationPool, operationRefIndex);
         if([obj semaphore])
             dispatch_semaphore_signal( [obj semaphore] );
+        [obj finish];
         
 #if defined DEBUG && defined DEBUG2
         NSLog(@" %@::%@ :: REMOVED pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, [obj description]);

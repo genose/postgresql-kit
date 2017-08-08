@@ -42,7 +42,9 @@ void _socketCallback(CFSocketRef s, CFSocketCallBackType callBackType,CFDataRef 
 #endif
     PGConnection* connection = (PGConnection* ) ((__bridge PGConnection* )__self);
 //    PGConnection* connection_cp = [  connection copy];
-	dispatch_async(dispatch_get_main_queue(), ^{
+    if(! connection)
+        return ;
+	dispatch_barrier_async(dispatch_get_main_queue(), ^{
       [((PGConnection* )connection) _socketCallback:callBackType];
     });
     
@@ -72,6 +74,8 @@ void _noticeProcessor(void* arg,const char* cString) {
 ////////////////////////////////////////////////////////////////////////////////
 
 -(void)_socketCallbackNotification {
+    @try
+    {
 	NSParameterAssert(_connection);
 	// consume input
 	PQconsumeInput(_connection);
@@ -97,6 +101,13 @@ void _noticeProcessor(void* arg,const char* cString) {
 #if defined DEBUG && defined DEBUG2
 				NSLog(@"PGConnectionStateQuery - Read - _socketCallbackNotification ::  free ");
 #endif
+}
+@catch (NSException *exception) {
+    NSLog(@" %@ exeception .... %@",NSStringFromSelector(_cmd),exception);
+}
+@finally {
+
+}
 }
 
 -(void)_socketCallbackConnectEndedWithStatus:(PostgresPollingStatusType)pqstatus {
@@ -126,7 +137,7 @@ void _noticeProcessor(void* arg,const char* cString) {
 		// set up notice processor, set success condition
 		PQsetNoticeProcessor(_connection,_noticeProcessor,(__bridge void *)(self));
         if([[self currentPoolOperation] poolIdentifier] == 0){
-            dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
+
         
         mach_port_t machTID = pthread_mach_thread_np(pthread_self());
         
@@ -147,8 +158,9 @@ void _noticeProcessor(void* arg,const char* cString) {
          dispatch_async(queue_inRun,^
 #endif
         {
-           
+              dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
             callback(usedPassword ? YES : NO,nil);
+        [((PGConnectionOperation*)[self masterPoolOperation]) finish];
              dispatch_semaphore_signal(ss);
             
         }
@@ -161,9 +173,8 @@ void _noticeProcessor(void* arg,const char* cString) {
         ;
 //          dispatch_semaphore_wait(ss,DISPATCH_TIME_FOREVER);
 //         [self wait_semaphore_read:ss];
-         [self wait_semaphore_read: ss withQueue:queue_inRun];
-//
-         [((PGConnectionOperation*)[self masterPoolOperation]) validate];
+         [self wait_semaphore_read: [((PGConnectionOperation*)[self masterPoolOperation]) semaphore] withQueue:queue_inRun];
+// [((PGConnectionOperation*)[self masterPoolOperation]) validate];
          }
 //         dispatch_destroy(queue);
 	} else if(needsPassword) {
@@ -402,7 +413,7 @@ void _noticeProcessor(void* arg,const char* cString) {
  *  or notification socket callback
  */
 -(void)_socketCallback:(CFSocketCallBackType)callBackType {
-
+    @try{
 #if defined DEBUG && defined DEBUG2
 	switch(callBackType) {
 		case kCFSocketReadCallBack:
@@ -467,6 +478,13 @@ void _noticeProcessor(void* arg,const char* cString) {
 	}
 	
 	[self _updateStatus];
+    }
+    @catch (NSException *exception) {
+        NSLog(@" %@ exeception .... %@",NSStringFromSelector(_cmd),exception);
+    }
+    @finally {
+
+    }
 }
 
 @end

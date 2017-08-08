@@ -337,14 +337,14 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
     //             }
     //
     //         });
-    
+            bool PG_busy = YES;
     
     //         if([[self currentPoolOperation] poolIdentifier] == 0)
-    while( diispacthed  && _runloopsource )
+    while( diispacthed  && _runloopsource && _socket )
     {
         
         
-        bool PG_busy = PQisBusy(_connection);
+        PG_busy = PQisBusy(_connection);
         diispacthed = dispatch_semaphore_wait(sem,5UL);
         //             dispatch_queue_t qq_qq = dispatch_get_current_queue();
         dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
@@ -353,6 +353,7 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
         if([[self currentPoolOperation] poolIdentifier] == 0)
         {
 //            dispatch_barrier_sync(qu_inRun, ^{
+if([[self currentPoolOperation] valid] && [[self currentPoolOperation] getCallback])
                 [self performSelector:@selector(dispathCall) withObject:nil];
 //            });
             //
@@ -373,14 +374,14 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
             
         }
         
-        id shared_info = (__bridge id)(_socket);
-        CFSocketCallBack shared_info_shared = (_socket->_callout);
-        const char * class_named = object_getClassName(shared_info);
-        
-        CFSocketNativeHandle sock = CFSocketGetNative(_socket);
-        
-        struct __shared_blob *shared_dd = malloc(sizeof(struct __shared_blob));
-        
+//        id shared_info = (__bridge id)(_socket);
+//        CFSocketCallBack shared_info_shared = (_socket->_callout);
+//        const char * class_named = object_getClassName(shared_info);
+//        
+//        CFSocketNativeHandle sock = CFSocketGetNative(_socket);
+//        
+//        struct __shared_blob *shared_dd = malloc(sizeof(struct __shared_blob));
+
         //        NSLog(@"%s", __CFFSocketCopyDescription(_socket));
         
         //        shared_dd->_rdsrc = (_socket->_shared)->_rdsrc;
@@ -392,21 +393,21 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
         
         //        objc_mem(&shared_dd, *(_socket->_shared) , sizeof(struct __shared_blob));
         
-        unsigned int outCount, i;
-        objc_property_t *objcProperties = class_copyPropertyList([shared_info class], &outCount);
-        for (i = 0; i < outCount; i++) {
-            objc_property_t property = objcProperties[i];
-            const char *propName = property_getName(property);
-            if(propName) {
-                //                const char * propType = getPropertyType(property);
-                NSString * propertyName = [NSString stringWithUTF8String:propName];
-                
-            }
-        }
-        
+//        unsigned int outCount, i;
+//        objc_property_t *objcProperties = class_copyPropertyList([shared_info class], &outCount);
+//        for (i = 0; i < outCount; i++) {
+//            objc_property_t property = objcProperties[i];
+//            const char *propName = property_getName(property);
+//            if(propName) {
+//                //                const char * propType = getPropertyType(property);
+//                NSString * propertyName = [NSString stringWithUTF8String:propName];
+//                
+//            }
+//        }
+//        
         //        [((NSObject*)shared_info) shared];
-        id sockk = (__bridge id)((_socket)->_shared);
-        
+//        id sockk = (__bridge id)((_socket)->_shared);
+
         //        typedef struct __CFSocket sockt;
         //
         //        dispatch_object_t disp_obj = (dispatch_object_t) ((shared_info*)->_shared->_rdsrc);
@@ -422,7 +423,7 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
         //                && [self connectionPoolOperationCount] > 1
         //                && ! PG_busy )
         //                 break;
-        
+                                   if([self status] == PGConnectionStatusDisconnected || ! _connection) break;
     }
     
     NSLog(@" //// Clean **** :: %s ", queued_name);
@@ -452,8 +453,9 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
     NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
     bool isRunningThreadMain = YES;
     bool isRunningThread = YES;
-    
-    while( _runloopsource && ( isRunningThreadMain || isRunningThread ) ){
+    if([self status] == PGConnectionStatusDisconnected || ! _connection) return;
+//    while( _runloopsource && ( isRunningThreadMain || isRunningThread ) )
+    {
         if(_runloopsource){
             CFRunLoopSourceSignal(_runloopsource);
         }
@@ -490,13 +492,16 @@ static CFStringRef __CFFSocketCopyDescription(CFTypeRef cf) {
 //                if(!isRunningThread)
 //                {
 //                    bool isRunningThreadMain = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-//                    if(!isRunningThreadMain){
+                    if(!isRunningThread){
+
                         [qq_loop runUntilDate:theNextDate];
-                        [qq_loop_main  runUntilDate:theNextDate];
+
                         
                         
                         
-//                    }
+                    }else{
+                         [qq_loop_main  runUntilDate:theNextDate];
+                    }
 //                }
 //            });
             

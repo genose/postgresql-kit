@@ -49,6 +49,7 @@
 -(id)queryString;
 -(id)UTF8String;
 
+-(void)finish;
 -(bool)valid;
 -(void)validate;
 -(void)invalidate;

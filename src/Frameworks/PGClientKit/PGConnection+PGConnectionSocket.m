@@ -331,7 +331,7 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     
     //    CFRunLoopRun();//(kCFRunLoopDefaultMode, 0.2 , NO);
 #if defined DEBUG && defined DEBUG2
-    NSLog(@" ------- %@ :: %@ :::: Socket Runloop Started ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
+    NSLog(@" ------- %@ :: %@ :::: Socket Runloop ENDED CLEAR ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
 }
 

@@ -68,13 +68,21 @@
 }
 -(bool)valid
 {
-    return !_invalidated;
+    return  (_callbackWhenDone == nil) ?  false : !_invalidated ;
+}
+-(void)finish
+{
+        _callbackWhenDone = nil;
 }
 -(void)invalidate
 {
     NSLog(@" %@::%@ :: INVALIDATE pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), _poolRefIdentifier, [self description]);
-    if(_poolRefIdentifier !=0)
-        [_operationConnectionClassRef invalidateOperation: _poolRefIdentifier];
+    if(_poolRefIdentifier !=0){
+            [_operationConnectionClassRef invalidateOperation: _poolRefIdentifier];
+        [self finish];
+    }
+
+
     _invalidated = TRUE;
 }
 
