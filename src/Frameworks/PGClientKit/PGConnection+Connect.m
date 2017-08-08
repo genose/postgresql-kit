@@ -168,6 +168,9 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 //             dispatch_async(dispatch_get_current_queue(),^
 #endif
         {
+#if defined DEBUG && defined DEBUG2
+            NSLog(@" ------- %@ :: %@ :::: Connection Started ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
+#endif
             [self _socketConnect:PGConnectionStateConnect];
 //            CFRunLoopRun();
 //    [self performSelector:@selector(_waitingPoolOperationForResult) withObject:self ];
@@ -185,9 +188,7 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 //    )
 #endif
             ;
-#if defined DEBUG && defined DEBUG2
-     NSLog(@" ------- %@ :: %@ :::: Connection Started ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
-#endif
+
 }
 
 -(BOOL)connectWithURL:(NSURL* )url usedPassword:(BOOL* )usedPassword error:(NSError** )error {

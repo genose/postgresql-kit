@@ -74,23 +74,17 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
 #endif
 //		[[self delegate] connection:self error:error];
 // @{@"connection":self, @"error":error}
-#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
-        [NSThread detachNewThreadWithBlock:
-#else
 
-         dispatch_async(dispatch_get_main_queue(),
-#endif
-^{
+//         dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+//         dispatch_barrier_sync(qu_inRun, ^ {
             	[[self delegate] connection:self error:error];
-}
-#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
-];
-#else
-);
+//            [NSThread detachNewThreadSelector:@selector(connection:error:) toTarget:[self delegate] withObject:@{@"connection":self, @"error":error} ];
+    #if defined DEBUG && defined DEBUG2
+     NSLog(@"PGConnectionStateQuery - _raiseError :: send to delegate connection:error: END" );
 #endif
-
-//        [NSThread detachNewThreadSelector:@selector(connection:error:) toTarget:[self delegate] withObject:nil ];
-    }else{
+//} );
+        
+        }else{
 #if defined DEBUG && defined DEBUG2
         NSLog(@"PGConnectionStateQuery - _raiseError :: no delegate respondsto connection:error:" );
 #endif
@@ -116,7 +110,10 @@ NSDictionary* PGClientErrorDomainCodeDescription = nil;
 #if defined DEBUG && defined DEBUG2
         NSLog(@"PGConnectionStateQuery - _raiseError :: performSelectorOnMainThread :: (%@)", theError );
 #endif
-        // [self performSelectorOnMainThread:@selector(_raiseError:) withObject:theError waitUntilDone:YES];
+        
+        
+//         [self performSelectorOnMainThread:@selector(_raiseError:) withObject:theError waitUntilDone:YES];
+        
         [self _raiseError:theError];
     }else{
 #if defined DEBUG && defined DEBUG2

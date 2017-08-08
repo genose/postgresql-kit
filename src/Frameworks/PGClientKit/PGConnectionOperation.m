@@ -68,7 +68,8 @@
 }
 -(bool)valid
 {
-    return  (_callbackWhenDone == nil) ?  false : !_invalidated ;
+    bool ret_valid =  (_callbackWhenDone == nil) ?  false : !_invalidated ;
+    return ret_valid;
 }
 -(void)finish
 {

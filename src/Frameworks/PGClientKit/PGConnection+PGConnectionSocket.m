@@ -328,7 +328,7 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
    
     [self wait_semaphore_read: semaphore_query_send ];
     
-    
+    [[NSThread currentThread] cancel];
     //    CFRunLoopRun();//(kCFRunLoopDefaultMode, 0.2 , NO);
 #if defined DEBUG && defined DEBUG2
     NSLog(@" ------- %@ :: %@ :::: Socket Runloop ENDED CLEAR ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
