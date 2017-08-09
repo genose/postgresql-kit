@@ -280,13 +280,13 @@ NSString* PGConnectionHostKey = @"Host";
     NSString* description = [PGConnectionStatusDescription objectForKey:key];
 //    [self performSelectorOnMainThread:@selector(_updateStatusDelayed:) withObject:@[ key,description ] waitUntilDone:NO];
     [self performSelector:@selector(_updateStatusDelayed:) withObject:@[ key,description ] ];
-#ifdef DEBUG2
+#ifdef DEBUG2 && DEBUG2 == 1
     NSLog(@"status => %@ %@",key,description);
 #endif
     
     // if connection is rejected, then call disconnect
     if(oldStatus==PGConnectionStatusRejected) {
-#ifdef DEBUG2
+#ifdef DEBUG2 && DEBUG2 == 1
         NSLog(@"_updateStatus => disconnect/rejected :: %@ %@",key,description);
 #endif
         [self disconnect];

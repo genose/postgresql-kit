@@ -63,7 +63,7 @@ PGKVPairs* makeKVPairs(NSDictionary* dict);
 void freeKVPairs(PGKVPairs* pairs);
 
 // profiling macros
-#ifdef DEBUG2
+#ifdef DEBUG2 && DEBUG2 == 1
 #include <mach/mach_time.h>
 #define TIME_TICK(name) NSLog(@"TICK: %@",(name)); \
                         uint64_t tick_time = mach_absolute_time(); \
