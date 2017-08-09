@@ -69,7 +69,7 @@
 // PGConnectionDelegate delegate implementation
 
 -(void)connection:(PGConnection* )connection willOpenWithParameters:(NSMutableDictionary* )dictionary {
-#ifdef DEBUG2 && DEBUG2 == 1
+#if defined(DEBUG2) && DEBUG2 == 1
 	[[self term] printf:@"connection:willOpenWithParameters:%@",dictionary];
 #endif
 	// if there is a password in the parameters, then store it
@@ -89,7 +89,7 @@
 }
 
 -(void)connection:(PGConnection* )connection statusChange:(PGConnectionStatus)status description:(NSString *)description {
-#ifdef DEBUG2 && DEBUG2 == 1
+#if defined(DEBUG2) && DEBUG2 == 1
 	[[self term] printf:@"StatusChange: %@ (%d)",description,status];
 #endif
 	// disconnected

@@ -79,16 +79,24 @@
         className = [[self delegate] connection:self willExecute:query];
     }
     
-    
-    // set state, update status
-    [self setState:PGConnectionStateQuery];
-    
-    [self _updateStatus];
-    
     // execute the command, free parameters
-    int resultFormat = ([self tupleFormat]==PGClientTupleFormatBinary) ? 1 : 0;
-    int returnCode = PQsendQueryParams(_connection,[query UTF8String],(int)params->size,params->types,(const char** )params->values,params->lengths,params->formats,resultFormat);
+    int resultFormat = 0;
+    int returnCode = 0;
+    @synchronized(self)
+    {
+        // set state, update status
+        [self setState:PGConnectionStateQuery];
+        
+        [self _updateStatus];
+        
+        // execute the command, free parameters
+        resultFormat = ([self tupleFormat]==PGClientTupleFormatBinary) ? 1 : 0;
+        returnCode = PQsendQueryParams(_connection,[query UTF8String],(int)params->size,params->types,(const char** )params->values,params->lengths,params->formats,resultFormat);
+       
+    }
+    
     _paramFree(params);
+    
     if(!returnCode) {
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
         NSLog(@"%@ :: %@ :: - execute - ERROR :: callback %p :: While EXECUTE (%@)", NSStringFromSelector(_cmd),NSStringFromClass([self class]), callback, query);
@@ -292,11 +300,16 @@
     if( qq_loop != [NSRunLoop mainRunLoop]){
         
         dispatch_barrier_sync(qu_inRun, ^{
-            [self wait_semaphore_read:sem withQueue:nil];
+//            @synchronized (self) {
+                    [self wait_semaphore_read:sem withQueue:nil];
+//            }
+            
         });
     }else{
+//        @synchronized (self) {
         //        dispatch_barrier_async(qu_inRun, ^{
         [self wait_semaphore_read:sem withQueue:nil];
+//        }
         //        });
     }
     
@@ -318,7 +331,8 @@
     long diispacthed = YES;
     
     bool PG_busy = YES;
-    
+    @try {
+        
     while(
           diispacthed
           && _runloopsource
@@ -327,9 +341,16 @@
     {
         
         
-        PG_busy = PQisBusy(_connection);
+//        PG_busy = PQisBusy(_connection);
         diispacthed = dispatch_semaphore_wait(sem,DISPATCH_TIME_NOW);
         
+        CFIndex indexInPool = CFArrayGetCount(_callbackOperationPool);
+        if(!indexInPool)
+        {
+            [NSException raise:NSInvalidArgumentException format:@" Warning :: Pool was sudently cleaned .... "];
+            
+            break;
+        }
         if( nil == [[self currentPoolOperation] getCallback] || !diispacthed){
             [NSThread sleepForTimeInterval:.01];
             break;
@@ -347,7 +368,13 @@
         }else{
             break;
         }
-        
+        indexInPool = CFArrayGetCount(_callbackOperationPool);
+        if(!indexInPool)
+        {
+            [NSException raise:NSInvalidArgumentException format:@" Warning @2 :: Pool was sudently cleaned .... "];
+            
+            break;
+        }
         if( diispacthed && ![[self currentPoolOperation] valid] )
             [NSThread sleepForTimeInterval:.01];
         
@@ -365,6 +392,13 @@
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" //// Clean **** :: %@ ", queued_name_STR);
 #endif
+    
+    } @catch (NSException *exception) {
+        NSLog(@"**************************** \n ERROR :: %@ :: \n **************************** \n [ %@ ] \n **************************** \n ", NSStringFromSelector(_cmd), exception);
+        dispatch_semaphore_signal(sem);
+    } @finally {
+        
+    }
     [[NSThread currentThread] cancel];
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" //// END  :: %@ ", queued_name_STR);

@@ -75,7 +75,7 @@ NSString* PGConnectionHostKey = @"Host";
         _connection = nil;
         _cancel = nil;
         //		_callback = nil;
-                _stateOperation = PGOperationStateNone;
+        _stateOperation = PGOperationStateNone;
         _callbackOperation = nil;
         _callbackOperationPool = CFArrayCreateMutable(NULL, 64, &kCFTypeArrayCallBacks);
         //        (NULL, 0, &kCFTypeDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
@@ -278,15 +278,15 @@ NSString* PGConnectionHostKey = @"Host";
     // from continuing
     NSNumber* key = [NSNumber numberWithInt:oldStatus];
     NSString* description = [PGConnectionStatusDescription objectForKey:key];
-//    [self performSelectorOnMainThread:@selector(_updateStatusDelayed:) withObject:@[ key,description ] waitUntilDone:NO];
+    //    [self performSelectorOnMainThread:@selector(_updateStatusDelayed:) withObject:@[ key,description ] waitUntilDone:NO];
     [self performSelector:@selector(_updateStatusDelayed:) withObject:@[ key,description ] ];
-#ifdef DEBUG2 && DEBUG2 == 1
+#if defined(DEBUG2) && DEBUG2 == 1
     NSLog(@"status => %@ %@",key,description);
 #endif
     
     // if connection is rejected, then call disconnect
     if(oldStatus==PGConnectionStatusRejected) {
-#ifdef DEBUG2 && DEBUG2 == 1
+#if defined(DEBUG2) && DEBUG2 == 1
         NSLog(@"_updateStatus => disconnect/rejected :: %@ %@",key,description);
 #endif
         [self disconnect];
@@ -310,12 +310,16 @@ NSString* PGConnectionHostKey = @"Host";
 {
     PGConnectionOperation* masterPoolOperation  = nil;
     
-    CFIndex indexInPool = CFArrayGetCount(_callbackOperationPool);
-    if(indexInPool > 0  )
-    {
-        masterPoolOperation  = (__bridge PGConnectionOperation*) CFArrayGetValueAtIndex(_callbackOperationPool, 0);
-    }else{
-        NSLog(@" ERROR :: NO master pool .... ");
+    @synchronized (self) {
+        
+        CFIndex indexInPool = CFArrayGetCount(_callbackOperationPool);
+        if(indexInPool > 0  )
+        {
+            masterPoolOperation  = (__bridge PGConnectionOperation*) CFArrayGetValueAtIndex(_callbackOperationPool, 0);
+        }else{
+            NSLog(@" ERROR :: NO master pool .... ");
+        }
+        
     }
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     //    NSLog(@" %@::%@ :: FETCH cureent pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, masterPoolOperation);
@@ -328,18 +332,21 @@ NSString* PGConnectionHostKey = @"Host";
 -(PGConnectionOperation*)currentPoolOperation
 {
     PGConnectionOperation* masterPoolOperation  = nil;
-    
-    CFIndex indexInPool = CFArrayGetCount(_callbackOperationPool);
-    if(indexInPool > 0  )
-    {
-        masterPoolOperation  = (__bridge PGConnectionOperation*) CFArrayGetValueAtIndex(_callbackOperationPool, indexInPool-1);
-    }else{
-        NSLog(@" ERROR :: NO pool .... ");
+    @synchronized (self) {
+        
+        CFIndex indexInPool = CFArrayGetCount(_callbackOperationPool);
+        if(indexInPool > 0  )
+        {
+            masterPoolOperation  = (__bridge PGConnectionOperation*) CFArrayGetValueAtIndex(_callbackOperationPool, ((indexInPool-1) >=0 ? indexInPool-1 : 0) );
+        }else{
+            NSLog(@" ERROR :: NO pool .... ");
+        }
+        
     }
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
-//    NSLog(@" %@::%@ :: FETCH cureent pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, masterPoolOperation);
+    //    NSLog(@" %@::%@ :: FETCH cureent pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, masterPoolOperation);
 #endif
-   
+    
     
     return masterPoolOperation;
 }
@@ -367,10 +374,10 @@ NSString* PGConnectionHostKey = @"Host";
 -(id)addOperation: (id)operationClass withCallBackWhenDone:(void*)callBackWhenDone withCallBackWhenError:(void*)callBackWhenError
 {
     void * recall_callbackDone = (__bridge void *)((__bridge void (^)(void* result, void* error)) (callBackWhenDone));
-                                                             
-                                  
-//            callBackWhenDone(result, error);
-//            [[ ((PGConnectionOperation*)self) getConnectionDelegate] invalidateOperation: [((PGConnectionOperation*)self) poolIdentifier] ];
+    
+    
+    //            callBackWhenDone(result, error);
+    //            [[ ((PGConnectionOperation*)self) getConnectionDelegate] invalidateOperation: [((PGConnectionOperation*)self) poolIdentifier] ];
     
     
     CFIndex indexInPool = CFArrayGetCount(_callbackOperationPool);
@@ -421,12 +428,12 @@ NSString* PGConnectionHostKey = @"Host";
         currentPoolOpe = [self currentPoolOperation];
         
         
-
+        
         
         
         if(
            ([((PGConnectionOperation*)currentPoolOpe) valid] && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0 )
-//           && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0
+           //           && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0
            || (_stateOperation)
            )
         {
@@ -434,9 +441,9 @@ NSString* PGConnectionHostKey = @"Host";
             isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
             isRunning = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
             [NSThread sleepForTimeInterval:.1];
-//            NSLog(@" >>>>> :::: %@ .... %d",NSStringFromSelector(_cmd),isRunning);
+            //            NSLog(@" >>>>> :::: %@ .... %d",NSStringFromSelector(_cmd),isRunning);
             
-//            return;
+            //            return;
         }else{
             
             break;
@@ -453,7 +460,7 @@ NSString* PGConnectionHostKey = @"Host";
     PGConnectionOperation* currentPoolOpe = [self currentPoolOperation];
     
     while ([((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0) {
-
+        
         
         prevPoolOpe = [self prevPoolOperation];
         currentPoolOpe = [self currentPoolOperation];
@@ -464,8 +471,8 @@ NSString* PGConnectionHostKey = @"Host";
            && [((PGConnectionOperation*)currentPoolOpe) valid]
            )
         {
-//            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
-//             isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+            //            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
+            //             isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
             [NSThread sleepForTimeInterval:.1];
             NSLog(@" >>>>> master wait ::::  %@ .... %d",NSStringFromSelector(_cmd),isRunning);
             
@@ -475,7 +482,7 @@ NSString* PGConnectionHostKey = @"Host";
             break;
         }
     }
-
+    
     
 }
 
