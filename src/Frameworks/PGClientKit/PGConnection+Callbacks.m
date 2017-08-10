@@ -130,8 +130,7 @@ void _noticeProcessor(void* arg,const char* cString) {
     
     pqstatus = PQconnectPoll(_connection);
     
-    _callbackOperation =  [((PGConnectionOperation*)[self masterPoolOperation]) getCallback];
-    void (^callback)(BOOL usedPassword,NSError* error ) = (__bridge void (^)( BOOL,NSError*  ))( _callbackOperation );
+    
     
     BOOL needsPassword = PQconnectionNeedsPassword(_connection) ? YES : NO;
     BOOL usedPassword = PQconnectionUsedPassword(_connection) ? YES : NO;
@@ -142,67 +141,106 @@ void _noticeProcessor(void* arg,const char* cString) {
     [self setState:PGConnectionStateNone];
     [self _updateStatus]; // this also calls disconnect when rejected
     
-    
-    // callback
-    if(pqstatus==PGRES_POLLING_OK) {
-        // set up notice processor, set success condition
-        PQsetNoticeProcessor(_connection,_noticeProcessor,(__bridge void *)(self));
-        if([[self currentPoolOperation] poolIdentifier] == 0){
+    @try {
+        // callback
+        
+        
+        _callbackOperation =  [((PGConnectionOperation*)[self masterPoolOperation]) getCallback];
+        void (^callback)(BOOL usedPassword,NSError* error ) = nil;
+        if(_callbackOperation != nil)
+        {
+            callback = (__bridge void (^)( BOOL,NSError*  ))( _callbackOperation );
             
-            
-            mach_port_t machTID = pthread_mach_thread_np(pthread_self());
-            
-            const char * queued_name = [[NSString stringWithFormat:@"%s_%x_%@", "operation_dispacthed_threads", machTID, NSStringFromSelector(_cmd) ] cString];
-#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
-            NSLog(@" //// %s ", queued_name);
-#endif
-            dispatch_queue_t queue_inRun = dispatch_queue_create(queued_name, DISPATCH_QUEUE_CONCURRENT);
-            queue_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
-            
-            
-            
-            
-            [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
-            
-            dispatch_async(queue_inRun,^
-                           
-                           {
-                               dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
-                               callback(usedPassword ? YES : NO,nil);
-                               [((PGConnectionOperation*)[self masterPoolOperation]) finish];
-                               dispatch_semaphore_signal(ss);
-                               
-                           }
-                           
-                           
-                           );
-            
-            //          dispatch_semaphore_wait(ss,DISPATCH_TIME_FOREVER);
-            //         [self wait_semaphore_read:ss];
-            [self wait_semaphore_read: [((PGConnectionOperation*)[self masterPoolOperation]) semaphore] withQueue:queue_inRun];
-            // [((PGConnectionOperation*)[self masterPoolOperation]) validate];
+        }else{
+            [NSException raise:NSInvalidArgumentException format:@" Warning :: Master Pool callback was sudently cleaned .... "];
         }
-        //         dispatch_destroy(queue);
-    } else if(needsPassword) {
-        // error callback - connection not made, needs password
-        callback(NO,[self raiseError:nil code:PGClientErrorNeedsPassword]);
-    } else if(usedPassword) {
-        // error callback - connection not made, password was invalid
-        callback(YES,[self raiseError:nil code:PGClientErrorInvalidPassword]);
-    } else {
-        // error callback - connection not made, some other kind of rejection
-        callback(YES,[self raiseError:nil code:PGClientErrorRejected]);
-    }
-    
+        
+        
+        
+        if(pqstatus==PGRES_POLLING_OK) {
+            // set up notice processor, set success condition
+            PQsetNoticeProcessor(_connection,_noticeProcessor,(__bridge void *)(self));
+            if([[self currentPoolOperation] poolIdentifier] == 0){
+                
+                
+                mach_port_t machTID = pthread_mach_thread_np(pthread_self());
+                
+                const char * queued_name = [[NSString stringWithFormat:@"%s_%x_%@", "operation_dispacthed_threads", machTID, NSStringFromSelector(_cmd) ] cString];
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
-    NSLog(@"%@ (%p) :: END :: - Read::END - %@ ::  free (callback %p)", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), callback);
+                NSLog(@" //// %s ", queued_name);
 #endif
-    // :: TODO  ::
-    //::    _callback = nil;
-    //
-    //    [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
-    //    [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
-    //    [self pushPoolOperation];
+                dispatch_queue_t queue_inRun = dispatch_queue_create(queued_name, DISPATCH_QUEUE_CONCURRENT);
+                queue_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+                
+                
+                
+                
+                [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
+                
+                dispatch_async(queue_inRun,^{
+                    @try{
+                        
+                        dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
+                        _callbackOperation =  [((PGConnectionOperation*)[self masterPoolOperation]) getCallback];
+                        if(_callbackOperation != nil)
+                        {
+                            void (^callback_master)(BOOL usedPassword,NSError* error ) = (__bridge void (^)( BOOL,NSError*  ))( _callbackOperation );
+                            
+                            callback_master(usedPassword ? YES : NO,nil);
+                            
+                        }else{
+                            [NSException raise:NSInvalidArgumentException format:@" Warning :: Master Pool callback (async) was sudently cleaned .... "];
+                        }
+                        dispatch_semaphore_signal(ss);
+                        [((PGConnectionOperation*)[self masterPoolOperation]) finish];
+                    } @catch (NSException *exception) {
+                        NSLog(@"**************************** \n ERROR :: %@ :: \n **************************** \n [ %@ ] \n **************************** \n ", NSStringFromSelector(_cmd), exception);
+                        dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
+                        dispatch_semaphore_signal(ss);
+                    } @finally {
+                        
+                    }
+                    
+                }
+                               
+                               
+                               );
+                
+                //          dispatch_semaphore_wait(ss,DISPATCH_TIME_FOREVER);
+                //         [self wait_semaphore_read:ss];
+                [self wait_semaphore_read: [((PGConnectionOperation*)[self masterPoolOperation]) semaphore] withQueue:queue_inRun];
+                // [((PGConnectionOperation*)[self masterPoolOperation]) validate];
+            }
+            //         dispatch_destroy(queue);
+        } else if(needsPassword) {
+            // error callback - connection not made, needs password
+            callback(NO,[self raiseError:nil code:PGClientErrorNeedsPassword]);
+        } else if(usedPassword) {
+            // error callback - connection not made, password was invalid
+            callback(YES,[self raiseError:nil code:PGClientErrorInvalidPassword]);
+        } else {
+            // error callback - connection not made, some other kind of rejection
+            callback(YES,[self raiseError:nil code:PGClientErrorRejected]);
+        }
+        
+#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
+        NSLog(@"%@ (%p) :: END :: - Read::END - %@ ::  free (callback %p)", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), callback);
+#endif
+        // :: TODO  ::
+        //::    _callback = nil;
+        //
+        //    [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
+        //    [((PGConnectionOperation*)[self masterPoolOperation]) invalidate];
+        //    [self pushPoolOperation];
+        
+        
+    } @catch (NSException *exception) {
+        NSLog(@"**************************** \n ERROR :: %@ :: \n **************************** \n [ %@ ] \n **************************** \n ", NSStringFromSelector(_cmd), exception);
+        dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
+        dispatch_semaphore_signal(ss);
+    } @finally {
+        
+    }
 }
 
 
@@ -382,6 +420,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                 
                 callback(r,error);
                 [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
+                [((PGConnectionOperation*)[self currentPoolOperation]) finish];
                 [((PGConnectionOperation*)[self masterPoolOperation]) validate];
             });
             

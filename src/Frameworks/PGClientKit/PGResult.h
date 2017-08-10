@@ -47,4 +47,20 @@
  */
 -(NSArray* )arrayForColumn:(NSString* )columnName;
 
+
+/* Transverseable object as Array */
+
+-(instancetype)initWithObjects:(NSArray *)objects forKeys:(NSArray *)keys; // :: unimplemented 
+
+
+-(NSArray *)allKeys;
+-(NSEnumerator *)keyEnumerator;
+
+-(id _Nullable )valueForKeyPath:(NSString * _Nonnull)keyPath ;
+
+-(id _Nullable )valueForKey:(NSString *_Nonnull)key ;
+-(id _Nullable )valueForUndefinedKey:(NSString * _Nonnull)key ;
+-(BOOL)keyExists:(NSString * _Nonnull)keyPath;
+
+-(NSInteger)count;
 @end

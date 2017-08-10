@@ -29,7 +29,7 @@
     id _operationConnectionClassRef;
     
     void *  _callbackWhenDone;
-    void* _callbackWhenError;
+    void * _callbackWhenError;
     id      _operation;
     id      _operationInfo;
     id      _operationType;
@@ -37,6 +37,7 @@
     NSInteger _operationStatus;
     bool _invalidated;
     dispatch_semaphore_t semaphore;
+    id resultsSet;
 }
 //(void(^)(id result,NSError* error)) 
 -(instancetype)initWithParametersDelegate:(id)connectionDelegate withRefPoolIdentifier:(NSInteger)poolIdentifier refClassOperation:(id)operation callWhenDone:(void*) callBackBlockDone callWhenError:(void(^)(id result,NSError* error))  callBackBlockError;
@@ -54,5 +55,8 @@
 -(void)validate;
 -(void)invalidate;
 -(void *)getCallback;
+
+-(id)setResults:(id)results;
+-(id)results;
 
 @end

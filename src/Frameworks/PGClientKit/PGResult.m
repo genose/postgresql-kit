@@ -46,10 +46,14 @@
     @synchronized(self) {
 
 
-        [NSThread sleepForTimeInterval:1.0];
+        [NSThread sleepForTimeInterval:0.1];
         [_cachedData removeAllObjects];
-        PQclear((PGresult* )_result);
-        [NSThread sleepForTimeInterval:1.0];
+//        _result = ((PGresult* )_result);
+        if( _result != NULL ){
+            PQclear((PGresult* )_result);
+        }
+        _result = NULL;
+        [NSThread sleepForTimeInterval:0.1];
     }
 }
 
@@ -60,6 +64,7 @@
 }
 
 -(NSUInteger)size {
+    NSParameterAssert(_result);
     NSUInteger _number = NSIntegerMax;
     if(_number==NSIntegerMax) {
         _number = PQntuples(_result);
@@ -68,6 +73,7 @@
 }
 
 -(NSUInteger)numberOfColumns {
+    NSParameterAssert(_result);
     NSUInteger _number = NSIntegerMax;
     if(_number==NSIntegerMax) {
         _number = PQnfields(_result);
@@ -76,6 +82,7 @@
 }
 
 -(NSUInteger)affectedRows {
+    NSParameterAssert(_result);
     NSUInteger _number = NSIntegerMax;
     if(_number==NSIntegerMax) {
         NSString* affectedRows = [NSString stringWithUTF8String:PQcmdTuples(_result)];
@@ -89,6 +96,7 @@
 }
 
 -(NSArray* )columnNames {
+    NSParameterAssert(_result);
     NSUInteger numberOfColumns = [self numberOfColumns];
     NSMutableArray* theColumns = [NSMutableArray arrayWithCapacity:numberOfColumns];
     for(NSUInteger i = 0; i < numberOfColumns; i++) {
@@ -179,6 +187,124 @@
     return array;
 }
 
+
+#pragma mark ********* KVC Protocol ********
+
+
+-(void)setValue:(id)value forUndefinedKey:(NSString *)key
+{
+    NSLog(@" :::: \n :: %@ :: %@ \n :: %@ \n :::::",NSStringFromSelector(_cmd), key, self );
+    NSMutableDictionary * dictTmp = [((NSMutableDictionary*)_cachedData) mutableCopy];
+    [((NSMutableDictionary*)dictTmp) setValue:value forKey: key];
+    [((NSMutableDictionary*)_cachedData) setDictionary: dictTmp];
+    
+}
+- (void)setObject:(id)anObject forKey:(NSString * _Nonnull)key
+{
+    NSLog(@" :::: \n :: %@ :: %@ \n :: %@ \n :::::",NSStringFromSelector(_cmd), key, self );
+    NSMutableDictionary * dictTmp = [((NSMutableDictionary*)_cachedData) mutableCopy];
+    [((NSMutableDictionary*)dictTmp) setValue:anObject forKey: key];
+    [((NSMutableDictionary*)_cachedData) setDictionary: dictTmp];
+}
+
+-(BOOL)keyExists:(NSString*)keyPath
+{
+    return ((BOOL)[((NSMutableDictionary*)_cachedData) valueForKeyPath: keyPath]);
+}
+
+-(id)valueForKeyPath:(NSString *)keyPath
+{
+    return [_cachedData valueForKeyPath:keyPath];
+}
+
+-(id)valueForKey:(NSString *)key
+{
+      NSLog(@" :::: \n :: %@ :: %@ \n :: %@ \n :::::",NSStringFromSelector(_cmd), key, self );
+    id value = nil;
+    if ( ! [key containsString: @"resultDetail."]) {
+        value =  [_cachedData objectForKey:key];
+        
+        if( nil == value )
+        {
+            
+            value = [_cachedData valueForKeyPath:[NSString stringWithFormat:@"resultDetail.%@",key]];
+            
+            
+        }
+    }
+    
+    return value;
+}
+
+-(id)valueForUndefinedKey:(NSString *)key
+{
+    NSLog(@" :::: \n :: %@ :: %@ \n :: %@ \n :::::",NSStringFromSelector(_cmd), key, self );
+    id value = [((NSMutableDictionary*)_cachedData) valueForKey:key];
+    return value;
+}
+
+-(id)objectForKey:(id)key
+{
+    // ::
+    NSLog(@" :::: \n :: %@ :: %@ \n :: %@ \n :::::",NSStringFromSelector(_cmd), key, self );
+    id value = nil;
+    
+        value =  [((NSMutableDictionary*)_cachedData) objectForKey:key];
+        
+        if( nil == value )
+        {
+//            if(![key respondsToSelector:@selector(UTF8String)])
+//            {
+//                key = [NSString stringWithFormat:@"%ld",key];
+//            }
+            
+            value = [((NSMutableDictionary*)_cachedData) valueForKeyPath:[NSString stringWithFormat:@"%@",key]];
+        }
+    
+    
+    return value;
+}
+
+-(NSUInteger)count
+{
+    
+//    bool cnt = [ _cachedData isKindOfClass:[NSDictionary class]] && [self dataReturned];
+//    if(!cnt)
+//    {
+//        return 0;
+//    }
+//    
+//    id keysC = [((NSMutableDictionary*)_cachedData) allKeys];
+//    NSUInteger allkeysC = [keysC count];
+    NSInteger cnt = ( _result ) ? (long) PQntuples(_result): 0;
+    return cnt;
+}
+
+-(NSArray *)allKeys
+{
+    
+    id keysC = [((NSMutableDictionary*)_cachedData) allKeys];
+    return keysC ;
+}
+
+-(NSEnumerator *)keyEnumerator
+{
+    return  (([_cachedData respondsToSelector: @selector(keyEnumerator) ]) ? [_cachedData keyEnumerator] : nil);
+}
+-(instancetype)initWithObjects:(NSArray *)objects forKeys:(NSArray *)keys
+{
+    [NSException raise:NSInvocationOperationCancelledException format:@"\n ************ \n ********** \n ERROR :: Unimplemented :: %@  :: \n >>> args / keys :: %@ \n >>>> keys :: %@ \n ************ \n ********** \n ",NSStringFromSelector(_cmd), keys, objects];
+    return self;
+}
+
+-(id)copyWithZone:(NSZone *)zone
+{
+    
+    PGResult* newClass = [[[self class] allocWithZone:zone] initWithResult: _result  format: [self format] encoding: _encoding ];
+    
+    return newClass;
+    
+}
     ////////////////////////////////////////////////////////////////////////////////
 
 -(NSString* )description {

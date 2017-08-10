@@ -294,8 +294,10 @@ typedef enum {
  *
  *  @param query    Either an NSString or PGQuery object
  *  @param callback The callback which is called on completion of the execution
+ *
+ *  @return The (id ?? shall be Transversable ?? ) object containing results of the query
  */
--(void)execute:(id)query whenDone:(void(^)(PGResult* result,NSError* error)) callback;
+-(id)execute:(id)query whenDone:(void(^)(PGResult* result,NSError* error)) callback;
 
 /**
  *  This method execute a statement on the server syncronously, then returns
@@ -306,7 +308,7 @@ typedef enum {
  *  @param query Either an NSString or PGQuery object
  *  @param error A pointer to an error object to be returned on error
  *
- *  @return The RGResult object containing results of the query
+ *  @return The PGResult object containing results of the query
  */
 -(PGResult* )execute:(id)query error:(NSError** )error;
 

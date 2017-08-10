@@ -119,6 +119,25 @@
 //    };
     return _callbackWhenDone;
 }
+#pragma mark results
+-(id)setResults:(id)results
+{
+//    if(results && [results respondsToSelector:@selector(copyWithZone:)])
+//    {
+//        resultsSet = [results copy];
+//    }else
+//    {
+        resultsSet = results;
+//    }
+    
+    return resultsSet;
+}
+-(id)results
+{
+    return resultsSet;
+}
+
+#pragma mark String Readable
 -(id)UTF8String
 {
     if([_operation respondsToSelector:@selector(UTF8String)])
@@ -128,6 +147,7 @@
     
     return nil;
 }
+
 -(id)queryString
 {
     if([_operation respondsToSelector:@selector(queryString)])
@@ -137,6 +157,7 @@
     
     return nil;
 }
+
 -(id)string
 {
     id queryStringDescription = [self queryString];

@@ -132,7 +132,7 @@
 #pragma mark public methods - execution
 ////////////////////////////////////////////////////////////////////////////////
 
--(void)execute:(id)query whenDone:(void(^)(PGResult* result,NSError* error)) callback {
+-(id)execute:(id)query whenDone:(void(^)(PGResult* result,NSError* error)) callback {
     
     NSParameterAssert([query isKindOfClass:[NSString class]] || [query isKindOfClass:[PGQuery class]]);
     NSParameterAssert(callback);
@@ -149,6 +149,8 @@
     
     NSString* query2 = nil;
     NSError* error = nil;
+    __block id queryResults = nil;
+    
     if([query isKindOfClass:[NSString class]]) {
         query2 = query;
     } else {
@@ -170,7 +172,8 @@
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" .... semaphore callback..... %@", [[self currentPoolOperation] semaphore]);
 #endif
-            
+            queryResults = [[self currentPoolOperation] setResults: result_recall ];
+//            [result_recall fetchRowAsDictionary]
             callback(result_recall , error_recall);
             
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
@@ -193,10 +196,14 @@
     
     dispatch_semaphore_t semaphore_query_send = [[self currentPoolOperation] semaphore];
     [self wait_semaphore_read: semaphore_query_send withQueue:queue_inRun];
+    
+//    NSLog(@" RESULTS ::\n Query : %@ \n:: Result : %@ ", query2, queryResults);
+    
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
-    NSLog(@" -_-_-_-_ Query END  -_-_-_-_-  :: %@ ", queued_name_STR);
+    NSLog(@" -_-_-_-_ Query END  -_-_-_-_-  :: Query : %@ :: %@ ", query2, queued_name_STR);
 #endif
     _stateOperation = PGOperationStateNone;
+    return (queryResults)?[queryResults copy] : nil;
 }
 
 -(PGResult* )execute:(id)query error:(NSError** )error {
