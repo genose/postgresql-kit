@@ -440,7 +440,7 @@ NSString* PGConnectionHostKey = @"Host";
             NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
             isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
             isRunning = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-            [NSThread sleepForTimeInterval:.1];
+            [NSThread sleepForTimeInterval:0.02];
             //            NSLog(@" >>>>> :::: %@ .... %d",NSStringFromSelector(_cmd),isRunning);
             
             //            return;
@@ -473,7 +473,7 @@ NSString* PGConnectionHostKey = @"Host";
         {
             //            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
             //             isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-            [NSThread sleepForTimeInterval:.1];
+            [NSThread sleepForTimeInterval:0.02];
             NSLog(@" >>>>> master wait ::::  %@ .... %d",NSStringFromSelector(_cmd),isRunning);
             
             //            return;

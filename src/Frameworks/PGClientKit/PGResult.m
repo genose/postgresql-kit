@@ -46,14 +46,14 @@
     @synchronized(self) {
 
 
-        [NSThread sleepForTimeInterval:0.1];
+        [NSThread sleepForTimeInterval:0.01];
         [_cachedData removeAllObjects];
 //        _result = ((PGresult* )_result);
         if( _result != NULL ){
             PQclear((PGresult* )_result);
         }
         _result = NULL;
-        [NSThread sleepForTimeInterval:0.1];
+        [NSThread sleepForTimeInterval:0.01];
     }
 }
 

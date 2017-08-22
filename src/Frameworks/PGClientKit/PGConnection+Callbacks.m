@@ -41,7 +41,7 @@ void _socketCallback(CFSocketRef s, CFSocketCallBackType callBackType,CFDataRef 
     
     
     
-    [NSThread sleepForTimeInterval:.01];;
+    [NSThread sleepForTimeInterval:0.01];;
     
     PGConnection* connection = (PGConnection* ) ((__bridge PGConnection* )__self);
     if(! connection

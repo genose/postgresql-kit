@@ -338,6 +338,9 @@
     long diispacthed = YES;
     
     bool PG_busy = YES;
+    
+    long timeoutThread = 600; // .05 * 600 = 30s
+    
     @try {
         
     while(
@@ -347,6 +350,7 @@
           && _connection )
     {
         
+        timeoutThread -= 0.05;
         
 //        PG_busy = PQisBusy(_connection);
         diispacthed = dispatch_semaphore_wait(sem,DISPATCH_TIME_NOW);
@@ -358,12 +362,22 @@
             
             break;
         }
-        if( nil == [[self currentPoolOperation] getCallback] || !diispacthed){
-            [NSThread sleepForTimeInterval:.01];
+        
+        [NSThread sleepForTimeInterval:0.05];
+        
+        if(  timeoutThread <= 0)
+        {
+             NSLog(@" //// STEP :: %@ :: Thread Time OUT  %@ ",NSStringFromSelector(_cmd), queued_name_STR);
             break;
         }
         
-        [NSThread sleepForTimeInterval:.01];
+        
+        if( nil == [[self currentPoolOperation] getCallback] || !diispacthed){
+//            [NSThread sleepForTimeInterval:0.1];
+            break;
+        }
+        
+        
         
         
         if([[self currentPoolOperation] valid] )
@@ -376,14 +390,16 @@
             break;
         }
         indexInPool = CFArrayGetCount(_callbackOperationPool);
+        
         if(!indexInPool)
         {
             [NSException raise:NSInvalidArgumentException format:@" Warning @2 :: Pool was sudently cleaned .... "];
             
             break;
         }
-        if( diispacthed && ![[self currentPoolOperation] valid] )
-            [NSThread sleepForTimeInterval:.01];
+        
+//        if( diispacthed && ![[self currentPoolOperation] valid] )
+//            [NSThread sleepForTimeInterval:0.01];
         
         //             if( diispacthed
         ////                && !isRunningThreadMain && !isRunningThreadMain
@@ -421,7 +437,7 @@
     bool isRunningThreadMain = YES;
     bool isRunningThread = YES;
     
-    [NSThread sleepForTimeInterval:.01];;
+//    [NSThread sleepForTimeInterval:0.05];;
     PGConnectionStatus con_status = [((PGConnection*)self) status];
     if(
        (
@@ -457,7 +473,7 @@
         isRunningThread = [qq_loop runMode:NSRunLoopCommonModes beforeDate:theNextDate];
         if(!isRunningThread)
         {
-            [NSThread sleepForTimeInterval:.1];;
+            [NSThread sleepForTimeInterval:0.01];;
         }
         
         if( qq_loop != [NSRunLoop mainRunLoop]){
@@ -465,7 +481,7 @@
                 [qq_loop runUntilDate:theNextDate];
                 if(!isRunningThread){
                     [qq_loop_main  runUntilDate:theNextDate];
-                    [NSThread sleepForTimeInterval:.1];;
+                    [NSThread sleepForTimeInterval:0.01];;
                 }
                 
                 //                [qq_loop_main runUntilDate:theNextDate];
