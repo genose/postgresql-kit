@@ -473,7 +473,7 @@
         isRunningThread = [qq_loop runMode:NSRunLoopCommonModes beforeDate:theNextDate];
         if(!isRunningThread)
         {
-            [NSThread sleepForTimeInterval:0.01];;
+            [NSThread sleepForTimeInterval:0.1];;
         }
         
         if( qq_loop != [NSRunLoop mainRunLoop]){
@@ -481,7 +481,7 @@
                 [qq_loop runUntilDate:theNextDate];
                 if(!isRunningThread){
                     [qq_loop_main  runUntilDate:theNextDate];
-                    [NSThread sleepForTimeInterval:0.01];;
+                    [NSThread sleepForTimeInterval:0.1];;
                 }
                 
                 //                [qq_loop_main runUntilDate:theNextDate];

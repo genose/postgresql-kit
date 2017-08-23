@@ -41,8 +41,8 @@ void _socketCallback(CFSocketRef s, CFSocketCallBackType callBackType,CFDataRef 
     
     
     
-    [NSThread sleepForTimeInterval:0.01];;
-    
+//    [NSThread sleepForTimeInterval:0.01];
+
     PGConnection* connection = (PGConnection* ) ((__bridge PGConnection* )__self);
     if(! connection
        //       || socketUsed_in > 20
@@ -124,8 +124,12 @@ void _noticeProcessor(void* arg,const char* cString) {
 -(void)_socketCallbackConnectEndedWithStatus:(PostgresPollingStatusType)pqstatus {
     
     //::	void (^callback)(BOOL usedPassword,NSError* error) = (__bridge void (^)(BOOL,NSError* ))(_callback);
-    if( ![((PGConnectionOperation*)[self currentPoolOperation]) valid]
-       || [[self currentPoolOperation] poolIdentifier] != 0)
+    PGConnectionOperation* currentPool = ((PGConnectionOperation*)[self currentPoolOperation]);
+    if(
+       !_connection ||
+       !currentPool ||
+       ![currentPool valid] ||
+       [currentPool poolIdentifier] != 0)
         return;
     
     pqstatus = PQconnectPoll(_connection);
@@ -160,7 +164,13 @@ void _noticeProcessor(void* arg,const char* cString) {
         if(pqstatus==PGRES_POLLING_OK) {
             // set up notice processor, set success condition
             PQsetNoticeProcessor(_connection,_noticeProcessor,(__bridge void *)(self));
-            if([[self currentPoolOperation] poolIdentifier] == 0){
+            currentPool = [self currentPoolOperation];
+            if(!currentPool) {
+
+                return;
+            }
+
+            if([currentPool poolIdentifier] == 0){
                 
                 
                 mach_port_t machTID = pthread_mach_thread_np(pthread_self());

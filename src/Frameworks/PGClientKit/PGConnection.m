@@ -317,7 +317,8 @@ NSString* PGConnectionHostKey = @"Host";
         {
             masterPoolOperation  = (__bridge PGConnectionOperation*) CFArrayGetValueAtIndex(_callbackOperationPool, 0);
         }else{
-            NSLog(@" ERROR :: NO master pool .... ");
+//            NSLog(@" ERROR :: NO master pool .... ");
+            [NSException raise:NSInvalidArgumentException format:@" ERROR :: NO  master pool .... "];
         }
         
     }
@@ -339,7 +340,8 @@ NSString* PGConnectionHostKey = @"Host";
         {
             masterPoolOperation  = (__bridge PGConnectionOperation*) CFArrayGetValueAtIndex(_callbackOperationPool, ((indexInPool-1) >=0 ? indexInPool-1 : 0) );
         }else{
-            NSLog(@" ERROR :: NO pool .... ");
+//            NSLog(@" ERROR :: NO pool .... ");
+            [NSException raise:NSInvalidArgumentException format:@" ERROR :: NO pool .... "];
         }
         
     }
@@ -413,78 +415,78 @@ NSString* PGConnectionHostKey = @"Host";
     return nil;
 }
 
--(void)_waitingPoolOperationForResult
-{
-    PGConnectionOperation* prevPoolOpe = [self prevPoolOperation];
-    PGConnectionOperation* currentPoolOpe = [self currentPoolOperation];
-    
-    NSLog(@" Waiting for concurrent queries resultset (%lu) (%@) ...... ", [self connectionPoolOperationCount], [self currentPoolOperation]);
-    NSTimeInterval resolutionTimeOut = 0.5;
-    bool isRunning = NO;
-    while (1) {
-        
-        
-        prevPoolOpe = [self prevPoolOperation];
-        currentPoolOpe = [self currentPoolOperation];
-        
-        
-        
-        
-        
-        if(
-           ([((PGConnectionOperation*)currentPoolOpe) valid] && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0 )
-           //           && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0
-           || (_stateOperation)
-           )
-        {
-            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
-            isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-            isRunning = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-            [NSThread sleepForTimeInterval:0.02];
-            //            NSLog(@" >>>>> :::: %@ .... %d",NSStringFromSelector(_cmd),isRunning);
-            
-            //            return;
-        }else{
-            
-            break;
-        }
-    }
-    NSLog(@" CLEARED Waiting for concurrent queries resultset (%lu)  (%@) ...... ", [self connectionPoolOperationCount], [self currentPoolOperation]);
-}
--(void)_waitingPoolOperationForResultMaster
-{
-    NSTimeInterval resolutionTimeOut = 0.5;
-    bool isRunning = NO;
-    
-    PGConnectionOperation* prevPoolOpe = [self prevPoolOperation];
-    PGConnectionOperation* currentPoolOpe = [self currentPoolOperation];
-    
-    while ([((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0) {
-        
-        
-        prevPoolOpe = [self prevPoolOperation];
-        currentPoolOpe = [self currentPoolOperation];
-        
-        
-        
-        if([((PGConnectionOperation*)prevPoolOpe) valid]
-           && [((PGConnectionOperation*)currentPoolOpe) valid]
-           )
-        {
-            //            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
-            //             isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
-            [NSThread sleepForTimeInterval:0.02];
-            NSLog(@" >>>>> master wait ::::  %@ .... %d",NSStringFromSelector(_cmd),isRunning);
-            
-            //            return;
-        }else{
-            NSLog(@" >>>>> master wait :: done :::: .... %d",isRunning);
-            break;
-        }
-    }
-    
-    
-}
+//-(void)_waitingPoolOperationForResult
+//{
+//    PGConnectionOperation* prevPoolOpe = [self prevPoolOperation];
+//    PGConnectionOperation* currentPoolOpe = [self currentPoolOperation];
+//    
+//    NSLog(@" Waiting for concurrent queries resultset (%lu) (%@) ...... ", [self connectionPoolOperationCount], [self currentPoolOperation]);
+//    NSTimeInterval resolutionTimeOut = 0.5;
+//    bool isRunning = NO;
+//    while (1) {
+//        
+//        
+//        prevPoolOpe = [self prevPoolOperation];
+//        currentPoolOpe = [self currentPoolOperation];
+//        
+//        
+//        
+//        
+//        
+//        if(
+//           ([((PGConnectionOperation*)currentPoolOpe) valid] && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0 )
+//           //           && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0
+//           || (_stateOperation)
+//           )
+//        {
+//            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
+//            isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+//            isRunning = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+//            [NSThread sleepForTimeInterval:0.02];
+//            //            NSLog(@" >>>>> :::: %@ .... %d",NSStringFromSelector(_cmd),isRunning);
+//            
+//            //            return;
+//        }else{
+//            
+//            break;
+//        }
+//    }
+//    NSLog(@" CLEARED Waiting for concurrent queries resultset (%lu)  (%@) ...... ", [self connectionPoolOperationCount], [self currentPoolOperation]);
+//}
+//-(void)_waitingPoolOperationForResultMaster
+//{
+//    NSTimeInterval resolutionTimeOut = 0.5;
+//    bool isRunning = NO;
+//    
+//    PGConnectionOperation* prevPoolOpe = [self prevPoolOperation];
+//    PGConnectionOperation* currentPoolOpe = [self currentPoolOperation];
+//    
+//    while ([((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0) {
+//        
+//        
+//        prevPoolOpe = [self prevPoolOperation];
+//        currentPoolOpe = [self currentPoolOperation];
+//        
+//        
+//        
+//        if([((PGConnectionOperation*)prevPoolOpe) valid]
+//           && [((PGConnectionOperation*)currentPoolOpe) valid]
+//           )
+//        {
+//            //            NSDate* theNextDate = [NSDate dateWithTimeIntervalSinceNow:resolutionTimeOut];
+//            //             isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
+//            [NSThread sleepForTimeInterval:0.02];
+//            NSLog(@" >>>>> master wait ::::  %@ .... %d",NSStringFromSelector(_cmd),isRunning);
+//            
+//            //            return;
+//        }else{
+//            NSLog(@" >>>>> master wait :: done :::: .... %d",isRunning);
+//            break;
+//        }
+//    }
+//    
+//    
+//}
 
 
 ////////////////////////////////////////////////////////////////////////////////
