@@ -101,6 +101,7 @@ typedef enum {
     PGOperationState _stateOperation;
 	NSDictionary* _parameters;
 	PGClientTupleFormat _tupleFormat;
+    id _connectedUrl;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -212,6 +213,11 @@ typedef enum {
 ////////////////////////////////////////////////////////////////////////////////
 
 @interface PGConnection (Connect)
+
+
+
+-(void) _reconnectWithHandler: ( void(^ _Nullable )(void * pm,NSError* error)) callback;
+
 
 /**
  *  Connect to a database (as specififed by the URL) without blocking. The method

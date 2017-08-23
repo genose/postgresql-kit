@@ -90,21 +90,74 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 ////////////////////////////////////////////////////////////////////////////////
 #pragma mark public methods - connections
 ////////////////////////////////////////////////////////////////////////////////
+-(void) _reconnectWithHandler: ( void(^ _Nullable )(void * pm,NSError* error)) callback
+{
+    if(!_connection && !_socket)
+    {
+        
+        // extract connection parameters
+        NSDictionary* parameters = [self _connectionParametersForURL: _connectedUrl];
+        if(parameters==nil) {
+            callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
+            return;
+        }
+        
+        // update the status as necessary
+        [self _updateStatus];
+        
+        // create parameter pairs
+        PGKVPairs* pairs = makeKVPairs(parameters);
+        if(pairs==nil) {
+            callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
+            return;
+        }
+        
+        // create connection
+        _connection = PQconnectStartParams(pairs->keywords,pairs->values,0);
+        freeKVPairs(pairs);
+        if(_connection==nil) {
+            callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
+            return;
+        }
+        
+        // check for initial bad connection status
+        if(PQstatus(_connection)==CONNECTION_BAD) {
+            PQfinish(_connection);
+            _connection = nil;
+            [self _updateStatus];
+            callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
+            return;
+        }
+
+    }else{
+        NSLog(@" %@ :: connection seems good ... ",NSStringFromSelector(_cmd));
+    }
+}
 
 -(void)connectWithURL:(NSURL* )url whenDone:(void(^)(BOOL usedPassword,NSError* error)) callback {
 	NSParameterAssert(url);
 	NSParameterAssert(callback);
-
+    @try {
+        
 	// check for bad initial state
-	if(_connection != nil || [self state] != PGConnectionStateNone) {
+	if(_connection != nil ) {
 		callback(NO,[self raiseError:nil code:PGClientErrorState]);
 		return;
 	}
-
+     PGConnectionState curstate = [self state];
+     if( curstate != PGConnectionStateNone)
+     {
+         NSLog(@" :: Warning :: %@ :: %@ :: \n :: Connection previously initialized ::", NSStringFromSelector(_cmd), self);
+         ;;
+     }
+    
 	// check other internal variable consistency
 	NSParameterAssert(_connection==nil);
 	NSParameterAssert(_socket==nil);
 	NSParameterAssert(_runloopsource==nil);
+        
+            _connectedUrl = url;
+        
 #if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
     [NSThread detachNewThreadWithBlock:^{
 #else
@@ -112,43 +165,16 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 //     dispatch_async(dispatch_get_main_queue(),^{
 #endif
 
-
-	// extract connection parameters
-	NSDictionary* parameters = [self _connectionParametersForURL:url];
-	if(parameters==nil) {
-		callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
-		return;
-	}
-
-	// update the status as necessary
-	[self _updateStatus];
-	
-	// create parameter pairs
-	PGKVPairs* pairs = makeKVPairs(parameters);
-	if(pairs==nil) {
-		callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
-		return;
-	}
-
-	// create connection
-	_connection = PQconnectStartParams(pairs->keywords,pairs->values,0);
-	freeKVPairs(pairs);
-	if(_connection==nil) {
-		callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
-		return;
-	}
-	
-	// check for initial bad connection status
-	if(PQstatus(_connection)==CONNECTION_BAD) {
-		PQfinish(_connection);
-        _connection = nil;
-		[self _updateStatus];
-		callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
-		return;
-	}
-
-	// set callback
-	NSParameterAssert(callback!=nil);
+        // set callback
+        NSParameterAssert(callback!=nil);
+        
+//        void (^callbackRecall)(bool result,NSError* error) = (__bridge void (^)(bool ,NSError* ))( callback);
+        void (^ _Nullable callbackRecall)(void * pm,NSError* error) = ( void (^ _Nullable )(void* ,NSError* ))( callback );
+        
+        [self _reconnectWithHandler: callbackRecall];
+	 
+    
+        
     // not quite good for cascaded Operation
 //::	_callback = (__bridge_retained void* )[callback copy];
     // So we do good things to deal with cascaded Operation
@@ -171,7 +197,22 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" ------- %@ :: %@ :::: Connection Started ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
+            
+            // start queued request
             [self _socketConnect:PGConnectionStateConnect];
+            
+//            if( _socket == nil)
+//            {
+//                NSLog(@" ERROR :: Premature Closing of socket .... (%@) ", self);
+//             
+//                if(_connection)
+//                    PQfinish(_connection);
+//                
+//                _connection = nil;
+//                
+//                callback(NO,[self raiseError:nil code:PGClientErrorUnknown]);
+//                
+//            }
 //            CFRunLoopRun();
 //    [self performSelector:@selector(_waitingPoolOperationForResult) withObject:self ];
 //    [self performSelector:@selector(_waitingPoolOperationForResultMaster) withObject:self ];
@@ -188,6 +229,13 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 //    )
 #endif
             ;
+
+    } @catch (NSException *exception) {
+        NSLog(@"**************************** \n ERROR :: %@ :: \n **************************** \n [ %@ ] \n **************************** \n ", NSStringFromSelector(_cmd), exception);
+        
+    } @finally {
+        
+    }
 
 }
 

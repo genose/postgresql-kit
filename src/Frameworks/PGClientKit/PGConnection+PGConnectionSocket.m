@@ -273,8 +273,30 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     //    _socket = CFSocketCreate(kCFAllocatorDefault, 0, 0, 0, kCFSocketReadCallBack | kCFSocketWriteCallBack, &_socketCallback,&context);
     
     //    PQsocket(_connection);
+    if( _connection == nil )
+    {
+        [NSException raise:NSInvalidArgumentException format:@" Error :: Can't create _connection : %@ ", self];
+        return;
+    }
     
-    _socket = CFSocketCreateWithNative(kCFAllocatorDefault,PQsocket(_connection),kCFSocketReadCallBack | kCFSocketWriteCallBack,&_socketCallback,&context);
+    if( !PQsocket(_connection) )
+    {
+        [NSException raise:NSInvalidArgumentException format:@" Error :: Can't create _connection : %@ ", self];
+        return;
+    }
+        
+    int timeout = 60;
+    
+    while (! _socket && timeout > 0 )
+    {
+        
+        _socket = CFSocketCreateWithNative(kCFAllocatorDefault,PQsocket(_connection),kCFSocketReadCallBack | kCFSocketWriteCallBack,&_socketCallback,&context);
+        [NSThread sleepForTimeInterval:1.0];
+        timeout --;
+        if(!timeout)
+            [NSException raise:NSInvalidArgumentException format:@" Error :: Can't create _connection :: TIMEOUT : %@ ", self];
+            
+    }
     
     
 }
@@ -293,6 +315,13 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     
     [self __CFSocket_instanciate];
     
+    if(_socket == nil)
+    {
+        [NSException raise:NSInvalidArgumentException format:@" Error :: Can't create socket : %@ ", self];
+        return;
+    }
+    
+    
     //    _socket = CFSocketCreate(kCFAllocatorDefault, 0, 0, 0, kCFSocketReadCallBack | kCFSocketWriteCallBack,&_socketCallback,&context);
     
 //    NSParameterAssert(_socket && CFSocketIsValid(_socket));
@@ -300,13 +329,14 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     CFSocketSetSocketFlags(_socket,~kCFSocketCloseOnInvalidate & CFSocketGetSocketFlags(_socket));
     //    CFSocketEnableCallBacks(_socket, kCFSocketDataCallBack | kCFSocketReadCallBack | kCFSocketWriteCallBack);
     
-    dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
-    
-    dispatch_source_t dsrc = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,  qu_inRun );
-    
-    dispatch_source_set_timer(dsrc, dispatch_time(DISPATCH_TIME_NOW, 0), NSEC_PER_SEC / 2, NSEC_PER_SEC);
+//    dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
+//    
+//    dispatch_source_t dsrc = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0,  qu_inRun );
+//    
+//    dispatch_source_set_timer(dsrc, dispatch_time(DISPATCH_TIME_NOW, 0), NSEC_PER_SEC / 2, NSEC_PER_SEC);
     
     //	cf(_socket, F_SETFL,  O_NONBLOCK);
+    
     // set state
     [self setState:state];
     [self _updateStatus];
@@ -328,7 +358,10 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
    
     [self wait_semaphore_read: semaphore_query_send ];
     
+    [NSThread sleepForTimeInterval:0.1];
+    
     [[NSThread currentThread] cancel];
+    
     //    CFRunLoopRun();//(kCFRunLoopDefaultMode, 0.2 , NO);
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
     NSLog(@" ------- %@ :: %@ :::: Socket Runloop ENDED CLEAR ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));

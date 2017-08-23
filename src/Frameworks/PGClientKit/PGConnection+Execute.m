@@ -37,10 +37,19 @@
     
     
     NSParameterAssert(query && [query isKindOfClass:[NSString class]]);
-    if(_connection==nil || [self state] != PGConnectionStateNone) {
+    
+    if(_connection==nil ) {
         callback(nil,[self raiseError:nil code:PGClientErrorState]);
         return;
     }
+    
+    PGConnectionState curstate = [self state];
+    if( curstate != PGConnectionStateNone)
+    {
+        NSLog(@" :: Warning :: %@ :: %@ :: \n :: Wrong State  :: %u ", NSStringFromSelector(_cmd), self, curstate);
+        ;;
+    }
+    
     
     // create parameters object
     PGClientParams* params = _paramAllocForValues(values);
@@ -137,6 +146,20 @@
     NSParameterAssert([query isKindOfClass:[NSString class]] || [query isKindOfClass:[PGQuery class]]);
     NSParameterAssert(callback);
     
+    if( ! _connection )
+    {
+        void (^ _Nullable callbackRecall)(void * pm,NSError* error) = ( void (^ _Nullable )(void* ,NSError* ))( callback );
+        
+        [self _reconnectWithHandler: callbackRecall];
+        if( ! _connection || !_socket)
+            callback(NO,[self raiseError:nil code:PGClientErrorState]);
+        
+//        [[self masterPoolOperation] invalidate];
+//        [[self masterPoolOperation] finish];
+        
+//        return;
+    }
+    
     _stateOperation = PGOperationStatePrepare;
     
     //    mach_port_t machTID = pthread_mach_thread_np(pthread_self());
@@ -172,7 +195,8 @@
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
             NSLog(@" .... semaphore callback..... %@", [[self currentPoolOperation] semaphore]);
 #endif
-            queryResults = [[self currentPoolOperation] setResults: result_recall ];
+//            id curope = [self currentPoolOperation];
+//            queryResults = [ curope setResults: result_recall ];
 //            [result_recall fetchRowAsDictionary]
             callback(result_recall , error_recall);
             
@@ -194,7 +218,9 @@
     dispatch_queue_t qu_inRun = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0);
     //    NSLog(@"+++ Is main queue? : %d", qu_inRun == dispatch_get_main_queue());
     
-    dispatch_semaphore_t semaphore_query_send = [[self currentPoolOperation] semaphore];
+    id curope = [self currentPoolOperation];
+    
+    dispatch_semaphore_t semaphore_query_send = [curope semaphore];
     [self wait_semaphore_read: semaphore_query_send withQueue:queue_inRun];
     
 //    NSLog(@" RESULTS ::\n Query : %@ \n:: Result : %@ ", query2, queryResults);
@@ -339,7 +365,7 @@
     
     bool PG_busy = YES;
     
-    long timeoutThread = 600; // .05 * 600 = 30s
+    long timeoutThread = 1200; // .05 * 600 = 60s
     
     @try {
         

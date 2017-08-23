@@ -45,6 +45,8 @@ void _socketCallback(CFSocketRef s, CFSocketCallBackType callBackType,CFDataRef 
 
     PGConnection* connection = (PGConnection* ) ((__bridge PGConnection* )__self);
     if(! connection
+       
+       || ! [ (PGConnection*)connection masterPoolOperation]
        //       || socketUsed_in > 20
        )
         return ;
@@ -192,7 +194,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                         
                         dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
                         _callbackOperation =  [((PGConnectionOperation*)[self masterPoolOperation]) getCallback];
-                        if(_callbackOperation != nil)
+                        if(_callbackOperation != nil && _connection )
                         {
                             void (^callback_master)(BOOL usedPassword,NSError* error ) = (__bridge void (^)( BOOL,NSError*  ))( _callbackOperation );
                             
@@ -202,7 +204,7 @@ void _noticeProcessor(void* arg,const char* cString) {
                             [NSException raise:NSInvalidArgumentException format:@" Warning :: Master Pool callback (async) was sudently cleaned .... "];
                         }
                         dispatch_semaphore_signal(ss);
-                        [((PGConnectionOperation*)[self masterPoolOperation]) finish];
+//                        [((PGConnectionOperation*)[self masterPoolOperation]) finish];
                     } @catch (NSException *exception) {
                         NSLog(@"**************************** \n ERROR :: %@ :: \n **************************** \n [ %@ ] \n **************************** \n ", NSStringFromSelector(_cmd), exception);
                         dispatch_semaphore_t ss = [((PGConnectionOperation*)[self masterPoolOperation]) semaphore]; // dispatch_semaphore_create(0);
@@ -427,10 +429,12 @@ void _noticeProcessor(void* arg,const char* cString) {
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
                 NSLog(@"PGConnectionStateQuery - Read - callback %p ",callback);
 #endif
+                id curope = [self currentPoolOperation];
+                id queryResults = [ curope setResults: r ];
                 
                 callback(r,error);
                 [((PGConnectionOperation*)[self currentPoolOperation]) invalidate];
-                [((PGConnectionOperation*)[self currentPoolOperation]) finish];
+//                [((PGConnectionOperation*)[self currentPoolOperation]) finish];
                 [((PGConnectionOperation*)[self masterPoolOperation]) validate];
             });
             
