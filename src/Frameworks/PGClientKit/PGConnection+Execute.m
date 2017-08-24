@@ -365,7 +365,7 @@
     
     bool PG_busy = YES;
     
-    long timeoutThread = 1200; // .05 * 600 = 60s
+    long timeoutThread = 2400; // .05 * 2400 = 120s
     
     @try {
         

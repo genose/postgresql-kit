@@ -307,12 +307,13 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
 ////////////////////////////////////////////////////////////////////////////////
 
 -(void)_socketConnect:(PGConnectionState)state {
-    NSParameterAssert(_state==PGConnectionStateNone);
+
     NSParameterAssert(state==PGConnectionStateConnect || state==PGConnectionStateReset || state==PGConnectionStateNone);
     NSParameterAssert(_connection);
-    NSParameterAssert(_socket==nil && _runloopsource==nil);
+
     
-    
+//    NSParameterAssert(_state==PGConnectionStateNone);
+//    NSParameterAssert(_socket==nil && _runloopsource==nil);    
     [self __CFSocket_instanciate];
     
     if(_socket == nil)

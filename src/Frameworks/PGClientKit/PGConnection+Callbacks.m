@@ -89,7 +89,11 @@ void _noticeProcessor(void* arg,const char* cString) {
 -(void)_socketCallbackNotification {
     @try
     {
-        NSParameterAssert(_connection);
+//        NSParameterAssert(_connection);
+    if(!_connection){
+
+        return;
+    }
         // consume input
         PQconsumeInput(_connection);
         
@@ -200,8 +204,11 @@ void _noticeProcessor(void* arg,const char* cString) {
                             
                             callback_master(usedPassword ? YES : NO,nil);
                             
-                        }else{
+                        }else if(!_connection){
                             [NSException raise:NSInvalidArgumentException format:@" Warning :: Master Pool callback (async) was sudently cleaned .... "];
+                        }
+                        else{
+                            [NSException raise:NSInvalidArgumentException format:@" Warning :: Master Pool Warning (async) :: NO OPERATION :: was sudently cleaned .... "];
                         }
                         dispatch_semaphore_signal(ss);
 //                        [((PGConnectionOperation*)[self masterPoolOperation]) finish];
