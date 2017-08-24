@@ -248,7 +248,7 @@ NSString* PGConnectionHostKey = @"Host";
     if([[self delegate] respondsToSelector:@selector(connection:statusChange:description:)]) {
         [[self delegate] connection:self statusChange:status description:description];
     }
-    //    [[NSThread currentThread] cancel];
+    [[NSThread currentThread] cancel];
     //    [NSThread cancelPreviousPerformRequestsWithTarget:self];
 }
 
@@ -317,8 +317,9 @@ NSString* PGConnectionHostKey = @"Host";
         {
             masterPoolOperation  = (__bridge PGConnectionOperation*) CFArrayGetValueAtIndex(_callbackOperationPool, 0);
         }else{
-//            NSLog(@" ERROR :: NO master pool .... ");
-            [NSException raise:NSInvalidArgumentException format:@" ERROR :: NO  master pool .... "];
+            //            NSLog(@" ERROR :: NO master pool .... ");
+            if(_socket || _connection)
+                [NSException raise:NSInvalidArgumentException format:@" ERROR :: NO  master pool .... "];
         }
         
     }
@@ -340,8 +341,9 @@ NSString* PGConnectionHostKey = @"Host";
         {
             masterPoolOperation  = (__bridge PGConnectionOperation*) CFArrayGetValueAtIndex(_callbackOperationPool, ((indexInPool-1) >=0 ? indexInPool-1 : 0) );
         }else{
-//            NSLog(@" ERROR :: NO pool .... ");
-            [NSException raise:NSInvalidArgumentException format:@" ERROR :: NO pool .... "];
+            //            NSLog(@" ERROR :: NO pool .... ");
+            if(! _connectionClosed )
+                [NSException raise:NSInvalidArgumentException format:@" ERROR :: NO pool .... "];
         }
         
     }
@@ -398,20 +400,38 @@ NSString* PGConnectionHostKey = @"Host";
 }
 -(id)invalidateOperation:(NSInteger)operationRefIndex
 {
-    CFIndex indexInPool = CFArrayGetCount(_callbackOperationPool);
-    if(indexInPool > 0 && indexInPool>=operationRefIndex && operationRefIndex !=0)
+    @try
     {
-        id obj = CFArrayGetValueAtIndex(_callbackOperationPool, operationRefIndex);
-        if([obj semaphore])
-            dispatch_semaphore_signal( [obj semaphore] );
-        [obj finish];
         
-//#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
-        NSLog(@" %@::%@ :: REMOVED pool (%d :: %@ ) .... ", NSStringFromClass([self class]), NSStringFromSelector(_cmd), indexInPool-1, [obj description]);
-//#endif
-        CFArrayRemoveValueAtIndex(_callbackOperationPool, operationRefIndex);
-        
+        CFIndex indexInPool = CFArrayGetCount(_callbackOperationPool);
+        if(indexInPool > 0 && indexInPool>=operationRefIndex && operationRefIndex !=0)
+        {
+            id obj = CFArrayGetValueAtIndex(_callbackOperationPool, operationRefIndex);
+            dispatch_semaphore_t opeSemaphore =  [obj semaphore];
+            
+            [obj finish];
+            
+            
+            //#if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
+            NSLog(@" %@ (%p) :: %@ :: REMOVED pool (%d :: %p :: %@ ) .... ", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), operationRefIndex, obj, [obj description]);
+            //#endif
+            indexInPool = CFArrayGetCount(_callbackOperationPool);
+            if( indexInPool >= operationRefIndex )
+            {
+                CFArrayRemoveValueAtIndex(_callbackOperationPool, operationRefIndex);
+            }else{
+                NSLog(@" %@ (%p) :: %@ :: ERROR REMOVing pool (%d) .... ", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), operationRefIndex);
+            }
+            
+            if(opeSemaphore)
+                dispatch_semaphore_signal( opeSemaphore );
+            
+        }
+    }@catch (NSException *exception) {
+        NSLog(@" %@ exeception .... %@",NSStringFromSelector(_cmd),exception);
     }
+    @finally{}
+    
     return nil;
 }
 
@@ -419,20 +439,20 @@ NSString* PGConnectionHostKey = @"Host";
 //{
 //    PGConnectionOperation* prevPoolOpe = [self prevPoolOperation];
 //    PGConnectionOperation* currentPoolOpe = [self currentPoolOperation];
-//    
+//
 //    NSLog(@" Waiting for concurrent queries resultset (%lu) (%@) ...... ", [self connectionPoolOperationCount], [self currentPoolOperation]);
 //    NSTimeInterval resolutionTimeOut = 0.5;
 //    bool isRunning = NO;
 //    while (1) {
-//        
-//        
+//
+//
 //        prevPoolOpe = [self prevPoolOperation];
 //        currentPoolOpe = [self currentPoolOperation];
-//        
-//        
-//        
-//        
-//        
+//
+//
+//
+//
+//
 //        if(
 //           ([((PGConnectionOperation*)currentPoolOpe) valid] && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0 )
 //           //           && [((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0
@@ -444,10 +464,10 @@ NSString* PGConnectionHostKey = @"Host";
 //            isRunning = [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
 //            [NSThread sleepForTimeInterval:0.02];
 //            //            NSLog(@" >>>>> :::: %@ .... %d",NSStringFromSelector(_cmd),isRunning);
-//            
+//
 //            //            return;
 //        }else{
-//            
+//
 //            break;
 //        }
 //    }
@@ -457,18 +477,18 @@ NSString* PGConnectionHostKey = @"Host";
 //{
 //    NSTimeInterval resolutionTimeOut = 0.5;
 //    bool isRunning = NO;
-//    
+//
 //    PGConnectionOperation* prevPoolOpe = [self prevPoolOperation];
 //    PGConnectionOperation* currentPoolOpe = [self currentPoolOperation];
-//    
+//
 //    while ([((PGConnectionOperation*)currentPoolOpe) poolIdentifier] !=0) {
-//        
-//        
+//
+//
 //        prevPoolOpe = [self prevPoolOperation];
 //        currentPoolOpe = [self currentPoolOperation];
-//        
-//        
-//        
+//
+//
+//
 //        if([((PGConnectionOperation*)prevPoolOpe) valid]
 //           && [((PGConnectionOperation*)currentPoolOpe) valid]
 //           )
@@ -477,15 +497,15 @@ NSString* PGConnectionHostKey = @"Host";
 //            //             isRunning = [[NSRunLoop mainRunLoop] runMode:NSDefaultRunLoopMode beforeDate:theNextDate];
 //            [NSThread sleepForTimeInterval:0.02];
 //            NSLog(@" >>>>> master wait ::::  %@ .... %d",NSStringFromSelector(_cmd),isRunning);
-//            
+//
 //            //            return;
 //        }else{
 //            NSLog(@" >>>>> master wait :: done :::: .... %d",isRunning);
 //            break;
 //        }
 //    }
-//    
-//    
+//
+//
 //}
 
 

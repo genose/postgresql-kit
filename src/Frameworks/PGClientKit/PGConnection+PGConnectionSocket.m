@@ -33,11 +33,15 @@ extern void _CFRunLoopSourceWakeUpRunLoops(CFRunLoopSourceRef rls);
 extern void  __CFRunLoopSourceWakeUpLoop(const void*,void*);
 
 extern void _socketCallback;
+
 static CFMutableArrayRef __CFCF_CFAllSockets = NULL;
 
 #define INVALID_SOCKET (CFSocketNativeHandle)(-1)
 #define MAX_SOCKADDR_LEN 256
 #define __CFCF_CFSockQueue()  dispatch_get_current_queue()
+
+static int MAX_SOCKET = 100;
+static int USED_SOCKET = 0;
 
 @implementation PGConnection (PGConnectionSocket)
 void _CFRunLoopSourceWakeUpRunLoops(CFRunLoopSourceRef rls) {
@@ -279,22 +283,37 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
         return;
     }
     
+
     if( !PQsocket(_connection) )
     {
         [NSException raise:NSInvalidArgumentException format:@" Error :: Can't create _connection : %@ ", self];
         return;
     }
-        
+    
+    if(_socket)
+    {
+        [self _socketDisconnect];
+    }
+    
+    
     int timeout = 60;
     
     while (! _socket && timeout > 0 )
     {
         
         _socket = CFSocketCreateWithNative(kCFAllocatorDefault,PQsocket(_connection),kCFSocketReadCallBack | kCFSocketWriteCallBack,&_socketCallback,&context);
-        [NSThread sleepForTimeInterval:1.0];
+        [NSThread sleepForTimeInterval:0.25];
+        
         timeout --;
         if(!timeout)
             [NSException raise:NSInvalidArgumentException format:@" Error :: Can't create _connection :: TIMEOUT : %@ ", self];
+        
+        if(!_socket)
+        {
+            NSLog(@" %@ :: %p :: Connecting ... ", NSStringFromClass([self class]), self);
+        }else{
+            NSLog(@" %@ :: %p :: Socket aquired (%p) ... ", NSStringFromClass([self class]), self, _socket);
+        }
             
     }
     
@@ -309,9 +328,12 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
 -(void)_socketConnect:(PGConnectionState)state {
 
     NSParameterAssert(state==PGConnectionStateConnect || state==PGConnectionStateReset || state==PGConnectionStateNone);
-    NSParameterAssert(_connection);
+    NSParameterAssert(_connection != nil);
 
-    
+    if(USED_SOCKET > MAX_SOCKET)
+    {
+        return;
+    }
 //    NSParameterAssert(_state==PGConnectionStateNone);
 //    NSParameterAssert(_socket==nil && _runloopsource==nil);    
     [self __CFSocket_instanciate];
@@ -342,6 +364,8 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     [self setState:state];
     [self _updateStatus];
     
+    if(!_socket)
+        return ;
     // add to run loop to begin polling
     _runloopsource = CFSocketCreateRunLoopSource(NULL,_socket,1);
     NSParameterAssert(_runloopsource && CFRunLoopSourceIsValid(_runloopsource));
@@ -356,12 +380,14 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
     NSLog(@"%@ :: %@ :::: Socket created ....", NSStringFromClass([self class]), NSStringFromSelector(_cmd));
 #endif
     
-   
+    USED_SOCKET ++;
     [self wait_semaphore_read: semaphore_query_send ];
     
-    [NSThread sleepForTimeInterval:0.1];
+    [NSThread sleepForTimeInterval:0.05];
     
     [[NSThread currentThread] cancel];
+    
+    [NSThread sleepForTimeInterval:0.05];
     
     //    CFRunLoopRun();//(kCFRunLoopDefaultMode, 0.2 , NO);
 #if defined(DEBUG)  && defined(DEBUG2) && DEBUG == 1 && DEBUG2 == 1
@@ -370,16 +396,22 @@ CFSocketRef _CFCF_CFSocketCreateWithNative(CFAllocatorRef allocator, CFSocketNat
 }
 
 -(void)_socketDisconnect {
+    [NSThread sleepForTimeInterval:0.05];
     if(_runloopsource) {
         CFRunLoopSourceInvalidate(_runloopsource);
         CFRelease(_runloopsource);
         _runloopsource = nil;
     }
+    [NSThread sleepForTimeInterval:0.1];
     if(_socket) {
         CFSocketInvalidate(_socket);
+        [NSThread sleepForTimeInterval:0.05];
         CFRelease(_socket);
+        [NSThread sleepForTimeInterval:0.05];
         _socket = nil;
+        USED_SOCKET --;
     }
+    [NSThread sleepForTimeInterval:0.05];
 }
 
 @end

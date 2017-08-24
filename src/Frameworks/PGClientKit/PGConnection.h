@@ -90,6 +90,7 @@ typedef enum {
 
 @interface PGConnection : NSObject <NSCopying> {
 	void* _connection;
+    bool _connectionClosed;
 	void* _cancel;
 //	replaced by a pool Mechanism :: void* _callback;
     void* _callbackOperation;

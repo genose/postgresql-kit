@@ -23,12 +23,14 @@
         [self _socketDisconnect];
         if(_connection != NULL) {
             
-            
+           
             PQfinish(_connection);
             _connection = nil;
             _parameters = nil;
+            _connectionClosed = YES;
             
         }
+         NSLog(@" %@ (%p) :: %@ :: Close connection pool (%ld) :: (%@) .... ", NSStringFromClass([self class]), self, NSStringFromSelector(_cmd), CFArrayGetCount(_callbackOperationPool), _connectedUrl);
     }
     [self _updateStatus];
 }

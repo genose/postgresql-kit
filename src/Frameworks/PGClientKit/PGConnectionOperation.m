@@ -160,6 +160,10 @@
 
 -(id)string
 {
+    
+    @try{
+        
+    
     id queryStringDescription = [self queryString];
     if(queryStringDescription != nil)
     {
@@ -176,12 +180,23 @@
         return [_operation string];
     }
     
-
+    }@catch (NSException *exception) {
+        NSLog(@" %@ exeception .... %@",NSStringFromSelector(_cmd),exception);
+    }
+    @finally{}
     
     return @"<no description>";
 }
 -(NSString *)description
 {
+    @try
+    {
     return [NSString stringWithFormat:@"<%@:%p> \n OperationType : %@ \n Connection Delegate : <%@:%p> \n Operation (%@)",NSStringFromClass([self class]), self, _operationType, NSStringFromClass([_operationConnectionClassRef class ]), _operationConnectionClassRef, [self string] ];
+    
+}@catch (NSException *exception) {
+    NSLog(@" %@ exeception .... %@",NSStringFromSelector(_cmd),exception);
+}
+@finally{}
+     return @"<no description>";
 }
 @end

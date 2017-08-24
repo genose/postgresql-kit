@@ -92,13 +92,27 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 ////////////////////////////////////////////////////////////////////////////////
 -(void) _reconnectWithHandler: ( void(^ _Nullable )(void * pm,NSError* error)) callback
 {
+//    if(_connection && _socket)
+//    {
+//        [self disconnect];
+//    }
+    
+    if(_connection && callback == nil){
+        PQfinish(_connection);
+        _connection = nil;
+    }
+    if(_socket && callback == nil){
+        [self _socketDisconnect];
+        _socket = nil;
+    }
+    
     if(!_connection && !_socket)
     {
-        
+        NSLog(@" %@ ::  %@",NSStringFromSelector(_cmd), callback);
         // extract connection parameters
         NSDictionary* parameters = [self _connectionParametersForURL: _connectedUrl];
         if(parameters==nil) {
-            callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
+           if(callback != nil) callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
             return;
         }
         
@@ -108,7 +122,7 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
         // create parameter pairs
         PGKVPairs* pairs = makeKVPairs(parameters);
         if(pairs==nil) {
-            callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
+           if(callback != nil) callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
             return;
         }
         
@@ -116,18 +130,34 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
         _connection = PQconnectStartParams(pairs->keywords,pairs->values,0);
         freeKVPairs(pairs);
         if(_connection==nil) {
-            callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
+            if(callback != nil) callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
             return;
         }
+        
+        _connectionClosed = NO;
         
         // check for initial bad connection status
         if(PQstatus(_connection)==CONNECTION_BAD) {
             PQfinish(_connection);
             _connection = nil;
             [self _updateStatus];
-            callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
+            if(callback != nil) callback(NO,[self raiseError:nil code:PGClientErrorParameters]);
             return;
         }
+        // not quite good for cascaded Operation
+        //::	_callback = (__bridge_retained void* )[callback copy];
+        // So we do good things to deal with cascaded Operation
+        if(callback != nil){
+//            if(CFArrayGetCount(_callbackOperationPool)) [[self masterPoolOperation] finish];
+        
+            [self addOperation:self withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
+        }else{
+             if( ! CFArrayGetCount(_callbackOperationPool))
+                 [self addOperation:self withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
+            [self _socketConnect:PGConnectionStateConnect];
+        }
+        
+        NSLog(@" %@ :: connection Initilized ... ",NSStringFromSelector(_cmd));
 
     }else{
         NSLog(@" %@ :: connection seems good ... ",NSStringFromSelector(_cmd));
@@ -135,8 +165,8 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 }
 
 -(void)connectWithURL:(NSURL* )url whenDone:(void(^)(BOOL usedPassword,NSError* error)) callback {
-	NSParameterAssert(url);
-	NSParameterAssert(callback);
+	NSParameterAssert(url!=nil);
+	NSParameterAssert(callback!=nil);
     @try {
         
 	// check for bad initial state
@@ -175,12 +205,7 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
 	 
     
         
-    // not quite good for cascaded Operation
-//::	_callback = (__bridge_retained void* )[callback copy];
-    // So we do good things to deal with cascaded Operation
- 
-    [self addOperation:self withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
-#if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
+   #if ( defined(__IPHONE_10_3) &&  __IPHONE_OS_VERSION_MAX_ALLOWED  > __IPHONE_10_3 ) || ( defined(MAC_OS_X_VERSION_10_12) && MAC_OS_X_VERSION_MAX_ALLOWED > MAC_OS_X_VERSION_10_12 )
     } ];
 #else
 
@@ -231,8 +256,8 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
             ;
 
     } @catch (NSException *exception) {
-        NSLog(@"**************************** \n ERROR :: %@ :: \n **************************** \n [ %@ ] \n **************************** \n ", NSStringFromSelector(_cmd), exception);
-        
+        NSLog(@"**************************** \n ERROR connection init :: %@ :: \n **************************** \n [ %@ ] \n **************************** \n ", NSStringFromSelector(_cmd), exception);
+        return;
     } @finally {
         
     }

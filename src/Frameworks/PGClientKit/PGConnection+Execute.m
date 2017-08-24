@@ -148,16 +148,26 @@
     
     if( ! _connection )
     {
+        
+        
+//        [self disconnect];
+        
         void (^ _Nullable callbackRecall)(void * pm,NSError* error) = ( void (^ _Nullable )(void* ,NSError* ))( callback );
         
-        [self _reconnectWithHandler: callbackRecall];
+//        [self setState:PGConnectionStateNone];
+        
+//        [self _reconnectWithHandler: nil];
         if( ! _connection || !_socket)
-            callback(NO,[self raiseError:nil code:PGClientErrorState]);
+        {
+            callback(nil,[self raiseError:nil code:PGClientErrorUnknown]);
+//                    [[self masterPoolOperation] invalidate];
+//                    [[self masterPoolOperation] finish];
+        }
         
-//        [[self masterPoolOperation] invalidate];
-//        [[self masterPoolOperation] finish];
         
-//        return;
+
+        
+        return nil;
     }
     
     _stateOperation = PGOperationStatePrepare;
@@ -365,7 +375,7 @@
     
     bool PG_busy = YES;
     
-    long timeoutThread = 2400; // .05 * 2400 = 120s
+    long timeoutThread = 120; // .05 * 2400 = 60s
     
     @try {
         
@@ -505,10 +515,10 @@
         if( qq_loop != [NSRunLoop mainRunLoop]){
             if([[self currentPoolOperation] poolIdentifier] == 0 ){
                 [qq_loop runUntilDate:theNextDate];
-                if(!isRunningThread){
-                    [qq_loop_main  runUntilDate:theNextDate];
-                    [NSThread sleepForTimeInterval:0.1];;
-                }
+//                if(!isRunningThread){
+//                    [qq_loop_main  runUntilDate:theNextDate];
+//                    [NSThread sleepForTimeInterval:0.1];;
+//                }
                 
                 //                [qq_loop_main runUntilDate:theNextDate];
                 //
@@ -522,7 +532,7 @@
             }else{
                 
                 {
-                    [qq_loop_main  runUntilDate:theNextDate];
+//                    [qq_loop_main  runUntilDate:theNextDate];
                     [qq_loop runUntilDate:theNextDate];
                     
                 }
@@ -537,7 +547,7 @@
                 if(!isRunningThread){
                     [qq_loop runUntilDate:theNextDate];
                 }else{
-                    [qq_loop_main  runUntilDate:theNextDate];
+//                    [qq_loop_main  runUntilDate:theNextDate];
                 }
             }
         
