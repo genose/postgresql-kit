@@ -148,7 +148,8 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
         //::	_callback = (__bridge_retained void* )[callback copy];
         // So we do good things to deal with cascaded Operation
         if(callback != nil){
-//            if(CFArrayGetCount(_callbackOperationPool)) [[self masterPoolOperation] finish];
+            if(CFArrayGetCount(_callbackOperationPool))
+                id mp = [[self masterPoolOperation] class];
         
             [self addOperation:self withCallBackWhenDone: (__bridge_retained void* )callback withCallBackWhenError: (__bridge_retained void* )callback ];
         }else{
@@ -157,7 +158,7 @@ PGKVPairs* makeKVPairs(NSDictionary* dict) {
             [self _socketConnect:PGConnectionStateConnect];
         }
         
-        NSLog(@" %@ :: connection Initilized ... ",NSStringFromSelector(_cmd));
+        NSLog(@" %@ :: connection Initialized (%p :: connection : %p :: socket : %p) ... ",NSStringFromSelector(_cmd), self, _connection, _socket);
 
     }else{
         NSLog(@" %@ :: connection seems good ... ",NSStringFromSelector(_cmd));
